@@ -7,8 +7,9 @@ import { ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { api } from "@/services/api";
+import { api, getErrorMessage } from "@/services/api";
 import { Field, TextAreaField } from "./form-fields";
+import { FormStatusMessage, type FormStatus } from "./form-status";
 
 const schema = z.object({
   patient_name: z.string().min(2, "Enter patient name"),
@@ -22,14 +23,18 @@ type FormValues = z.infer<typeof schema>;
 
 export function AppointmentModal({ trigger }: { trigger?: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<FormStatus | null>(null);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   async function onSubmit(values: FormValues) {
     setStatus(null);
-    await api.createAppointment(values);
-    setStatus("Appointment request submitted. The clinic will contact you shortly.");
-    reset();
+    try {
+      await api.createAppointment(values);
+      setStatus({ type: "success", message: "Appointment request submitted. The clinic will contact you shortly." });
+      reset();
+    } catch (error) {
+      setStatus({ type: "error", message: getErrorMessage(error) });
+    }
   }
 
   return (
@@ -55,7 +60,7 @@ export function AppointmentModal({ trigger }: { trigger?: ReactNode }) {
             </div>
             <Field label="Preferred Date" type="date" registration={register("preferred_date")} error={errors.preferred_date} />
             <TextAreaField label="Message" registration={register("message")} error={errors.message} />
-            {status ? <p className="rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">{status}</p> : null}
+            <FormStatusMessage status={status} />
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Request"}</Button>
           </form>
         </Dialog.Content>

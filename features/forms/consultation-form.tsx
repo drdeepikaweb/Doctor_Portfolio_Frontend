@@ -5,8 +5,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { api } from "@/services/api";
+import { api, getErrorMessage } from "@/services/api";
 import { Field, TextAreaField } from "./form-fields";
+import { FormStatusMessage, type FormStatus } from "./form-status";
 
 const schema = z.object({
   name: z.string().min(2, "Enter full name"),
@@ -19,11 +20,12 @@ const schema = z.object({
   document: z.any().optional(),
 });
 
-type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormValues = z.output<typeof schema>;
 
 export function ConsultationForm() {
-  const [status, setStatus] = useState<string | null>(null);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const [status, setStatus] = useState<FormStatus | null>(null);
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormInput, unknown, FormValues>({ resolver: zodResolver(schema) });
 
   async function onSubmit(values: FormValues) {
     setStatus(null);
@@ -36,9 +38,13 @@ export function ConsultationForm() {
     formData.append("address", values.address);
     formData.append("symptoms", values.symptoms);
     if (values.document?.[0]) formData.append("document", values.document[0]);
-    await api.createConsultation(formData);
-    setStatus("Consultation request submitted successfully.");
-    reset();
+    try {
+      await api.createConsultation(formData);
+      setStatus({ type: "success", message: "Consultation request submitted successfully." });
+      reset();
+    } catch (error) {
+      setStatus({ type: "error", message: getErrorMessage(error) });
+    }
   }
 
   return (
@@ -74,7 +80,7 @@ export function ConsultationForm() {
           />
           <span className="mt-1 block text-xs text-slate-500">PDF, JPG, PNG. Maximum file size: 10 MB.</span>
         </label>
-        {status ? <p className="rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">{status}</p> : null}
+        <FormStatusMessage status={status} />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Consultation Request"}</Button>
       </div>
     </form>

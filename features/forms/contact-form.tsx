@@ -5,8 +5,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { api } from "@/services/api";
+import { api, getErrorMessage } from "@/services/api";
 import { Field, TextAreaField } from "./form-fields";
+import { FormStatusMessage, type FormStatus } from "./form-status";
 
 const schema = z.object({
   name: z.string().min(2, "Enter your name"),
@@ -18,14 +19,18 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function ContactForm() {
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<FormStatus | null>(null);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   async function onSubmit(values: FormValues) {
     setStatus(null);
-    await api.createContact(values);
-    setStatus("Message sent successfully.");
-    reset();
+    try {
+      await api.createContact(values);
+      setStatus({ type: "success", message: "Message sent successfully." });
+      reset();
+    } catch (error) {
+      setStatus({ type: "error", message: getErrorMessage(error) });
+    }
   }
 
   return (
@@ -37,7 +42,7 @@ export function ContactForm() {
           <Field label="Email" type="email" registration={register("email")} error={errors.email} />
         </div>
         <TextAreaField label="Message" registration={register("message")} error={errors.message} />
-        {status ? <p className="rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">{status}</p> : null}
+        <FormStatusMessage status={status} />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending..." : "Send Message"}</Button>
       </div>
     </form>

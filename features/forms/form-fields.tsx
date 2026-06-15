@@ -1,10 +1,14 @@
-import type { FieldError, UseFormRegisterReturn } from "react-hook-form";
+import type { UseFormRegisterReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+type FieldErrorLike = {
+  message?: string;
+};
+
 type FieldProps = {
   label: string;
-  error?: FieldError;
+  error?: FieldErrorLike;
   registration: UseFormRegisterReturn;
 } & React.InputHTMLAttributes<HTMLInputElement>;
 
@@ -20,7 +24,7 @@ export function Field({ label, error, registration, ...props }: FieldProps) {
 
 type TextAreaFieldProps = {
   label: string;
-  error?: FieldError;
+  error?: FieldErrorLike;
   registration: UseFormRegisterReturn;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 

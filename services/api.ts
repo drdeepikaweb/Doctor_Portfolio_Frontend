@@ -1,10 +1,16 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: init?.body instanceof FormData ? init.headers : { "Content-Type": "application/json", ...init?.headers },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: init?.body instanceof FormData ? init.headers : { "Content-Type": "application/json", ...init?.headers },
+    });
+  } catch {
+    throw new Error("Unable to reach the clinic server. Please try again shortly.");
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Request failed" }));
@@ -21,3 +27,7 @@ export const api = {
   getVisitors: () => request<{ visitor_count: number }>("/visitors", { cache: "no-store" }),
   incrementVisitors: () => request<{ visitor_count: number }>("/visitors/increment", { method: "POST", credentials: "include" }),
 };
+
+export function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong. Please try again.";
+}
