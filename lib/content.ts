@@ -15,7 +15,7 @@ import {
 export const clinic = {
   doctor: "Dr. Deepika Bhardwaj",
   credentials: "MBBS, DNB, MD (General Medicine)",
-  tagline: "Comprehensive Internal Medicine & Preventive Healthcare",
+  tagline: "Registration Number: UKMC-14488",
   phone: "+91 98765 43210",
   email: "clinic@example.com",
   address: "Clinic Address, New Delhi, India",
