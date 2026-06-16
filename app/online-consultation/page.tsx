@@ -16,7 +16,7 @@ export default function OnlineConsultationPage() {
           <SectionHeading
             eyebrow="Online Consultation"
             title="Secure consultation request"
-            description="Submit patient details, symptoms, and relevant medical documents. Accepted formats: PDF, JPG, PNG up to 10 MB."
+            description="Submit patient details and relevant medical documents. Accepted formats: PDF, JPG, PNG up to 10 MB."
           />
           <div className="mt-8 rounded-lg border border-cyan-100 bg-white p-6 text-sm leading-7 text-slate-700 shadow-sm">
             {/* <p>Upload flow: documents are sent to the backend, validated, uploaded to Cloudinary, stored in PostgreSQL, and emailed to the clinic.</p> */}

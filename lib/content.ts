@@ -16,11 +16,11 @@ export const clinic = {
   doctor: "Dr. Deepika Bhardwaj",
   credentials: "MBBS, DNB, MD (General Medicine)",
   tagline: "Registration Number: UKMC-14488",
-  phone: "+91 98765 43210",
-  email: "clinic@example.com",
+  phone: "+91 83078 42191",
+  email: "bhardwajdeepika16@gmail.com",
   address: "Clinic Address, New Delhi, India",
   mapQuery: "New Delhi medical clinic",
-  whatsapp: "919876543210",
+  whatsapp: "+91 83078 42191",
 };
 
 export const treatments = [

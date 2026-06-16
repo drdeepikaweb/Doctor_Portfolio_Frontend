@@ -66,12 +66,11 @@ export function ConsultationForm() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Phone Number" registration={register("phone")} error={errors.phone} />
-          <Field label="Email Address" type="email" registration={register("email")} error={errors.email} />
+          <Field label="Email Address (optional)" type="email" registration={register("email")} error={errors.email} />
         </div>
-        <Field label="Full Address" registration={register("address")} error={errors.address} />
-        <TextAreaField label="Medical Concerns / Symptoms" registration={register("symptoms")} error={errors.symptoms} />
+        <Field label="Address" registration={register("address")} error={errors.address} />
         <label className="block">
-          <span className="text-sm font-semibold text-slate-800">Upload Documents</span>
+          <span className="text-sm font-semibold text-slate-800">Upload previous lab report, prescription, blood report, X-ray, MRI, CT Scan, etc.</span>
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
