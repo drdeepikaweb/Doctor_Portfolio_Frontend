@@ -24,22 +24,13 @@ const reasons = [
   {title: "Online Consultation Support", description: "Offering secure and convenient virtual consultations, ensuring accessible medical guidance, follow-up care, and ongoing support wherever you are."},
 ]
 
-// const reasons = [
-//   "Experienced Physician",
-//   "Diagnostic Strategy",
-//   "Personalized Treatment Plans",
-//   "Preventive Healthcare",
-//   "Patient-Centric Care",
-//   "Online Consultation Support",
-// ];
-
 export default function Home() {
   return (
     <>
       <section className="relative overflow-hidden bg-[linear-gradient(115deg,#e6fffb_0%,#f8fafc_42%,#ffffff_100%)]">
         <div className="absolute left-6 top-24 h-20 w-20 rounded-full border border-teal-200/80" />
         <div className="absolute right-12 top-36 hidden h-24 w-24 rounded-full border border-cyan-200 md:block" />
-        <div className="mx-auto grid min-h-[680px] max-w-7xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
+        <div className="mx-auto grid min-h-170 max-w-7xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
           <MotionSection className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
               <Activity className="h-4 w-4" />
@@ -70,7 +61,7 @@ export default function Home() {
             </div>
           </MotionSection>
           <MotionSection delay={0.15} className="relative">
-            <div className="relative mx-auto aspect-[4/5] max-w-md overflow-hidden rounded-lg bg-cyan-50 shadow-2xl ring-1 ring-cyan-100">
+            <div className="relative mx-auto aspect-4/5 max-w-md overflow-hidden rounded-lg bg-cyan-50 shadow-2xl ring-1 ring-cyan-100">
               <Image
                 src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85"
                 alt="Professional female physician in a clinic"

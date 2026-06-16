@@ -29,6 +29,7 @@ export const api = {
   doctorLogin: (data: unknown) => request<{ token: string; doctor: DoctorProfile; expires_at: string }>("/doctors/login", { method: "POST", body: JSON.stringify(data) }),
   doctorLogout: (token: string) => request<{ message: string }>("/doctors/logout", { method: "POST", headers: authHeaders(token) }),
   getDoctorProfile: (token: string) => request<{ doctor: DoctorProfile }>("/doctors/me", { headers: authHeaders(token), cache: "no-store" }),
+  listDoctorAppointments: (token: string) => request<{ appointments: AppointmentRequest[] }>("/doctors/appointments", { headers: authHeaders(token), cache: "no-store" }),
   listDoctorContacts: (token: string) => request<{ contacts: ContactMessage[] }>("/doctors/contacts", { headers: authHeaders(token), cache: "no-store" }),
   listDoctorConsultations: (token: string) => request<{ consultations: ConsultationRequest[] }>("/doctors/consultations", { headers: authHeaders(token), cache: "no-store" }),
 };
@@ -46,8 +47,18 @@ export type DoctorProfile = {
 export type ContactMessage = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string;
+  message: string;
+  created_at: string;
+};
+
+export type AppointmentRequest = {
+  id: string;
+  patient_name: string;
+  phone: string;
+  email: string | null;
+  preferred_date: string;
   message: string;
   created_at: string;
 };

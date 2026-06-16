@@ -1,11 +1,11 @@
 "use client";
 
-import { LockKeyhole, LogOut, Mail, MessageSquareText, RefreshCw, Stethoscope } from "lucide-react";
+import { CalendarCheck, LockKeyhole, LogOut, Mail, MessageSquareText, RefreshCw, Stethoscope } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, ContactMessage, ConsultationRequest, DoctorProfile, getErrorMessage } from "@/services/api";
+import { api, AppointmentRequest, ContactMessage, ConsultationRequest, DoctorProfile, getErrorMessage } from "@/services/api";
 
 const tokenKey = "doctor_panel_token";
 
@@ -16,11 +16,12 @@ const paymentLabels: Record<string, string> = {
   others: "All Others",
 };
 
-type PanelTab = "consultations" | "contacts";
+type PanelTab = "consultations" | "appointments" | "contacts";
 
 export default function DoctorPanelPage() {
   const [token, setToken] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem(tokenKey) || "");
   const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
+  const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [contacts, setContacts] = useState<ContactMessage[]>([]);
   const [consultations, setConsultations] = useState<ConsultationRequest[]>([]);
   const [activeTab, setActiveTab] = useState<PanelTab>("consultations");
@@ -34,6 +35,7 @@ export default function DoctorPanelPage() {
     window.localStorage.removeItem(tokenKey);
     setToken("");
     setDoctor(null);
+    setAppointments([]);
     setContacts([]);
     setConsultations([]);
   }, []);
@@ -44,12 +46,14 @@ export default function DoctorPanelPage() {
     setLoading(true);
     setStatus("");
     try {
-      const [profileData, contactData, consultationData] = await Promise.all([
+      const [profileData, appointmentData, contactData, consultationData] = await Promise.all([
         api.getDoctorProfile(activeToken),
+        api.listDoctorAppointments(activeToken),
         api.listDoctorContacts(activeToken),
         api.listDoctorConsultations(activeToken),
       ]);
       setDoctor(profileData.doctor);
+      setAppointments(appointmentData.appointments);
       setContacts(contactData.contacts);
       setConsultations(consultationData.consultations);
     } catch (error) {
@@ -93,7 +97,11 @@ export default function DoctorPanelPage() {
     clearSession();
   }
 
-  const currentRows = useMemo(() => activeTab === "consultations" ? consultations.length : contacts.length, [activeTab, consultations.length, contacts.length]);
+  const currentRows = useMemo(() => {
+    if (activeTab === "appointments") return appointments.length;
+    if (activeTab === "contacts") return contacts.length;
+    return consultations.length;
+  }, [activeTab, appointments.length, consultations.length, contacts.length]);
 
   if (!isLoggedIn) {
     return (
@@ -154,6 +162,9 @@ export default function DoctorPanelPage() {
           <button type="button" onClick={() => setActiveTab("consultations")} className={tabClass(activeTab === "consultations")}>
             <Stethoscope className="h-4 w-4" /> Consultations ({consultations.length})
           </button>
+          <button type="button" onClick={() => setActiveTab("appointments")} className={tabClass(activeTab === "appointments")}>
+            <CalendarCheck className="h-4 w-4" /> Appointments ({appointments.length})
+          </button>
           <button type="button" onClick={() => setActiveTab("contacts")} className={tabClass(activeTab === "contacts")}>
             <MessageSquareText className="h-4 w-4" /> Contact Messages ({contacts.length})
           </button>
@@ -162,7 +173,9 @@ export default function DoctorPanelPage() {
         {status ? <p className="mb-4 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-700">{status}</p> : null}
         <div className="mb-3 text-sm font-semibold text-slate-600">{loading ? "Loading..." : `${currentRows} records`}</div>
 
-        {activeTab === "consultations" ? <ConsultationsTable consultations={consultations} /> : <ContactsTable contacts={contacts} />}
+        {activeTab === "consultations" ? <ConsultationsTable consultations={consultations} /> : null}
+        {activeTab === "appointments" ? <AppointmentsTable appointments={appointments} /> : null}
+        {activeTab === "contacts" ? <ContactsTable contacts={contacts} /> : null}
       </div>
     </section>
   );
@@ -193,9 +206,43 @@ function ContactsTable({ contacts }: { contacts: ContactMessage[] }) {
               <td className="px-4 py-3 font-semibold text-slate-950">{contact.name}</td>
               <td className="px-4 py-3 text-slate-700">
                 <p>{contact.phone}</p>
-                <p className="inline-flex items-center gap-1 text-slate-500"><Mail className="h-3 w-3" /> {contact.email}</p>
+                <p className="inline-flex items-center gap-1 text-slate-500"><Mail className="h-3 w-3" /> {contact.email || "Email not provided"}</p>
               </td>
               <td className="max-w-xl px-4 py-3 leading-6 text-slate-700">{contact.message}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AppointmentsTable({ appointments }: { appointments: AppointmentRequest[] }) {
+  if (!appointments.length) return <EmptyState text="No appointment requests yet." />;
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <table className="min-w-full divide-y divide-slate-200 text-sm">
+        <thead className="bg-slate-50 text-left text-slate-700">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Submitted</th>
+            <th className="px-4 py-3 font-semibold">Preferred Date</th>
+            <th className="px-4 py-3 font-semibold">Patient</th>
+            <th className="px-4 py-3 font-semibold">Contact</th>
+            <th className="px-4 py-3 font-semibold">Message</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {appointments.map((appointment) => (
+            <tr key={appointment.id} className="align-top">
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(appointment.created_at)}</td>
+              <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-950">{formatDate(appointment.preferred_date)}</td>
+              <td className="px-4 py-3 font-semibold text-slate-950">{appointment.patient_name}</td>
+              <td className="px-4 py-3 text-slate-700">
+                <p>{appointment.phone}</p>
+                <p className="inline-flex items-center gap-1 text-slate-500"><Mail className="h-3 w-3" /> {appointment.email || "Email not provided"}</p>
+              </td>
+              <td className="max-w-xl px-4 py-3 leading-6 text-slate-700">{appointment.message}</td>
             </tr>
           ))}
         </tbody>

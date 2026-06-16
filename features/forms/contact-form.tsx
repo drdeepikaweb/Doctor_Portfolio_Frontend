@@ -12,7 +12,7 @@ import { FormStatusMessage, type FormStatus } from "./form-status";
 const schema = z.object({
   name: z.string().min(2, "Enter your name"),
   phone: z.string().min(10, "Enter a valid phone number"),
-  email: z.string().email("Enter a valid email"),
+  email: z.string().email("Enter a valid email").optional().or(z.literal("")),
   message: z.string().min(5, "Please enter your message"),
 });
 
@@ -39,7 +39,7 @@ export function ContactForm() {
         <Field label="Name" registration={register("name")} error={errors.name} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Phone Number" registration={register("phone")} error={errors.phone} />
-          <Field label="Email" type="email" registration={register("email")} error={errors.email} />
+          <Field label="Email (optional)" type="email" registration={register("email")} error={errors.email} />
         </div>
         <TextAreaField label="Message" registration={register("message")} error={errors.message} />
         <FormStatusMessage status={status} />
