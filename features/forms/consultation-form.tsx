@@ -110,7 +110,6 @@ export function ConsultationForm() {
             </p>
           ))}
         </div>
-        <TextAreaField label="Symptoms / Medical Concern" registration={register("symptoms")} error={errors.symptoms} />
         <FormStatusMessage status={status} />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Consultation Request"}</Button>
       </div>
