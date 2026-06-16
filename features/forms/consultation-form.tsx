@@ -9,15 +9,23 @@ import { api, getErrorMessage } from "@/services/api";
 import { Field, TextAreaField } from "./form-fields";
 import { FormStatusMessage, type FormStatus } from "./form-status";
 
+const paymentOptions = [
+  { value: "iitr_student", label: "For IITR Students", fee: 150 },
+  { value: "iitr_faculty_staff", label: "For IITR Faculty/Staff", fee: 350 },
+  { value: "iitr_retired_faculty_staff", label: "For IITR Retired Faculty/Staff", fee: 250 },
+  { value: "others", label: "For All Others", fee: 400 },
+];
+
 const schema = z.object({
   name: z.string().min(2, "Enter full name"),
   age: z.coerce.number().min(1, "Enter age").max(120, "Enter a valid age"),
   gender: z.string().min(1, "Select gender"),
   phone: z.string().min(10, "Enter a valid phone number"),
-  email: z.string().email("Enter a valid email"),
+  email: z.string().email("Enter a valid email").optional().or(z.literal("")),
   address: z.string().min(5, "Enter full address"),
   symptoms: z.string().min(10, "Describe medical concerns"),
-  document: z.any().optional(),
+  documents: z.any().optional(),
+  paymentCategory: z.string().min(1, "Select payment category"),
 });
 
 type FormInput = z.input<typeof schema>;
@@ -34,10 +42,13 @@ export function ConsultationForm() {
     formData.append("age", String(values.age));
     formData.append("gender", values.gender);
     formData.append("phone", values.phone);
-    formData.append("email", values.email);
+    if (values.email) formData.append("email", values.email);
     formData.append("address", values.address);
     formData.append("symptoms", values.symptoms);
-    if (values.document?.[0]) formData.append("document", values.document[0]);
+    const paymentOption = paymentOptions.find((option) => option.value === values.paymentCategory);
+    formData.append("payment_category", values.paymentCategory);
+    formData.append("consultation_fee", String(paymentOption?.fee || 0));
+    Array.from<File>(values.documents || []).forEach((document) => formData.append("documents", document));
     try {
       await api.createConsultation(formData);
       setStatus({ type: "success", message: "Consultation request submitted successfully." });
@@ -74,11 +85,32 @@ export function ConsultationForm() {
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            multiple
             className="mt-2 w-full rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm"
-            {...register("document")}
+            {...register("documents")}
           />
-          <span className="mt-1 block text-xs text-slate-500">PDF, JPG, PNG. Maximum file size: 10 MB.</span>
+          <span className="mt-1 block text-xs text-slate-500">Optional. PDF, JPG, PNG. Maximum file size: 10 MB each, up to 5 files.</span>
         </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-800">Payment Option</span>
+          <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
+            <option value="">Select payment category</option>
+            {paymentOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}: Rs. {option.fee}
+              </option>
+            ))}
+          </select>
+          {errors.paymentCategory ? <span className="mt-1 block text-sm text-red-600">{errors.paymentCategory.message}</span> : null}
+        </label>
+        <div className="grid gap-2 rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
+          {paymentOptions.map((option) => (
+            <p key={option.value} className="font-medium">
+              {option.label}: Rs. {option.fee}
+            </p>
+          ))}
+        </div>
+        <TextAreaField label="Symptoms / Medical Concern" registration={register("symptoms")} error={errors.symptoms} />
         <FormStatusMessage status={status} />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Consultation Request"}</Button>
       </div>

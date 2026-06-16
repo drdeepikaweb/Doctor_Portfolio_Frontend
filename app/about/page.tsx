@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Award, GraduationCap, HeartHandshake, Target } from "lucide-react";
+import { Award, BriefcaseMedical, GraduationCap, HeartHandshake, Target } from "lucide-react";
 import { SectionHeading } from "@/components/section-heading";
 import { clinic } from "@/lib/content";
 
@@ -40,6 +40,16 @@ export default function AboutPage() {
               <p>
                 Her medical philosophy is simple: listen carefully, diagnose responsibly, treat ethically, and help patients understand their health enough to participate confidently in care.
               </p>
+            </div>
+            <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-6">
+              <div className="flex items-center gap-3">
+                <BriefcaseMedical className="h-6 w-6 text-cyan-700" />
+                <h2 className="text-xl font-bold text-slate-950">Formerly at</h2>
+              </div>
+              <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-slate-700">
+                <li>LHMC & associated RML Hospital, New Delhi</li>
+                <li>General Duty Medical Officer, IIT Roorkee</li>
+              </ul>
             </div>
           </div>
         </div>

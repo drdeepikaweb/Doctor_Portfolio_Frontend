@@ -22,7 +22,7 @@ export default function ContactPage() {
             {[
               { icon: Phone, title: "Phone Number", text: clinic.phone },
               { icon: Mail, title: "Email", text: clinic.email },
-              { icon: MapPin, title: "Clinic Address", text: clinic.address },
+              // { icon: MapPin, title: "Clinic Address", text: clinic.address },
             ].map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <Icon className="mb-3 h-6 w-6 text-cyan-700" />
@@ -30,13 +30,13 @@ export default function ContactPage() {
                 <p className="mt-1 text-slate-700">{text}</p>
               </div>
             ))}
-            <iframe
+            {/* <iframe
               title="Clinic Google Map"
               src={mapSrc}
               className="h-80 w-full rounded-lg border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-            />
+            /> */}
           </div>
           <ContactForm />
         </div>

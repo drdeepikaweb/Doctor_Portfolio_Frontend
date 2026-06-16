@@ -26,6 +26,46 @@ export const api = {
   createConsultation: (data: FormData) => request("/consultations", { method: "POST", body: data }),
   getVisitors: () => request<{ visitor_count: number }>("/visitors", { cache: "no-store" }),
   incrementVisitors: () => request<{ visitor_count: number }>("/visitors/increment", { method: "POST", credentials: "include" }),
+  doctorLogin: (data: unknown) => request<{ token: string; doctor: DoctorProfile; expires_at: string }>("/doctors/login", { method: "POST", body: JSON.stringify(data) }),
+  doctorLogout: (token: string) => request<{ message: string }>("/doctors/logout", { method: "POST", headers: authHeaders(token) }),
+  getDoctorProfile: (token: string) => request<{ doctor: DoctorProfile }>("/doctors/me", { headers: authHeaders(token), cache: "no-store" }),
+  listDoctorContacts: (token: string) => request<{ contacts: ContactMessage[] }>("/doctors/contacts", { headers: authHeaders(token), cache: "no-store" }),
+  listDoctorConsultations: (token: string) => request<{ consultations: ConsultationRequest[] }>("/doctors/consultations", { headers: authHeaders(token), cache: "no-store" }),
+};
+
+function authHeaders(token: string) {
+  return { Authorization: `Bearer ${token}` };
+}
+
+export type DoctorProfile = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  created_at: string;
+};
+
+export type ConsultationRequest = {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  phone: string;
+  email: string | null;
+  address: string;
+  symptoms: string;
+  document_url: string | null;
+  document_urls: string[];
+  payment_category: string | null;
+  consultation_fee: number | null;
+  created_at: string;
 };
 
 export function getErrorMessage(error: unknown) {
