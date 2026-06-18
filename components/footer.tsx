@@ -14,6 +14,10 @@ const links = [
   ["Contact Us", "/contact"],
 ];
 
+const social_links = [
+  { icon: Linkedin, href: "https://www.linkedin.com/in/dr-deepika-bhardwaj-143b091a1/" },
+]
+
 export function Footer() {
   const [visitors, setVisitors] = useState<number | null>(null);
 
@@ -34,12 +38,16 @@ export function Footer() {
     <footer className="bg-slate-950 text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
         <div className="md:col-span-2">
-          <h2 className="text-xl font-bold">{clinic.doctor}</h2>
-          <p className="mt-2 text-slate-300">{clinic.credentials}</p>
-          <p className="mt-4 max-w-md leading-7 text-slate-300">{clinic.tagline}. Patient-focused general medicine care for diagnosis, chronic disease support, and preventive health.</p>
+          <h2 className="text-xl font-bold py-2">{clinic.doctor}</h2>
+          <p className="mt-2 text-slate-300 py-1">{clinic.credentials}</p>
+          <p className="text-slate-300 py-1">{clinic.hospital}</p>
+          <p className="text-slate-300 py-1">{clinic.achievement}</p>
+          <p className="text-slate-300 py-1">{clinic.tagline}</p>
+          <p className="mt-4 max-w-md leading-7 text-slate-300">Patient-focused general medicine care for diagnosis, chronic disease support, and preventive health.</p>
+
           <div className="mt-5 flex gap-3">
-            {[Facebook, Instagram, Linkedin].map((Icon, index) => (
-              <a key={index} href="#" aria-label="Social profile" className="rounded-md border border-white/15 p-2 text-slate-200 hover:bg-white/10">
+            {social_links.map(({ icon: Icon, href }, index) => (
+              <a key={index} href={href} target="_blank" aria-label="Social profile" className="rounded-md border border-white/15 p-2 text-slate-200 hover:bg-white/10">
                 <Icon className="h-5 w-5" />
               </a>
             ))}
@@ -54,7 +62,6 @@ export function Footer() {
         <div>
           <h3 className="font-semibold">Contact Information</h3>
           <div className="mt-4 grid gap-3 text-slate-300">
-            <p className="flex gap-2"><MapPin className="mt-1 h-4 w-4 shrink-0" /> {clinic.address}</p>
             <a className="flex gap-2 hover:text-white" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
             <a className="flex gap-2 hover:text-white" href={`mailto:${clinic.email}`}><Mail className="h-4 w-4" /> {clinic.email}</a>
           </div>

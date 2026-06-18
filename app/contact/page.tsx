@@ -16,7 +16,7 @@ export default function ContactPage() {
   return (
     <section className="bg-white py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading eyebrow="Contact Us" title="Reach the clinic" centered />
+        <SectionHeading eyebrow="" title="Contact Us" centered />
         <div className="mt-12 grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-5">
             {[

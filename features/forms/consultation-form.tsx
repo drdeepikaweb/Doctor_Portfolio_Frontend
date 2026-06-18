@@ -111,7 +111,7 @@ export function ConsultationForm() {
           ))}
         </div>
         <FormStatusMessage status={status} />
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Consultation Request"}</Button>
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Pay &Submit Consultation Request"}</Button>
       </div>
     </form>
   );

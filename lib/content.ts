@@ -10,6 +10,9 @@ import {
   Syringe,
   Thermometer,
   Wind,
+  Brain,
+  Droplets,
+  Bone,
 } from "lucide-react";
 
 export const clinic = {
@@ -18,6 +21,8 @@ export const clinic = {
   tagline: "Registration Number: UKMC-14488",
   phone: "+91 83078 42191",
   email: "bhardwajdeepika16@gmail.com",
+  achievement: "AIR-147 | Haryana State Rank - 1 in NEET-PG 2020",
+  hospital: "LHMC & RML Hospital, New Delhi",
   address: "Clinic Address, New Delhi, India",
   mapQuery: "New Delhi medical clinic",
   whatsapp: "+91 83078 42191",
@@ -30,11 +35,15 @@ export const treatments = [
   { title: "Respiratory Diseases", description: "Care for cough, breathlessness, chest infections, and chronic respiratory concerns.", icon: Wind },
   { title: "Asthma Care", description: "Inhaler guidance, trigger management, and action plans for better breathing control.", icon: ShieldCheck },
   { title: "Infectious Diseases", description: "Evaluation and treatment for common infections with responsible antibiotic use.", icon: Syringe },
-  { title: "Fever Management", description: "Diagnosis-focused care for viral fever, dengue-like illness, malaria-like symptoms, and more.", icon: Thermometer },
-  { title: "Digestive Disorders", description: "Support for acidity, abdominal pain, bowel changes, nausea, and digestive discomfort.", icon: Soup },
+  { title: "Fever Management", description: "Treatment of viral fever like Dengue and Chikungunya, bacterial fever, Malaria, and more.", icon: Thermometer },
+  { title: "Digestive Disorders", description: "Support for acidity, abdominal pain, bowel changes, nausea, liver diseases and digestive discomfort.", icon: Soup },
   { title: "Lifestyle Disorders", description: "Risk reduction for metabolic concerns through practical lifestyle and medical care.", icon: Scale },
   { title: "Preventive Health Checkups", description: "Screening, risk assessment, vaccinations, and wellness follow-up.", icon: ClipboardPlus },
   { title: "General Health Consultations", description: "First-contact medical advice for ongoing symptoms and overall health concerns.", icon: Stethoscope },
+  { title: "Neurological Disorders", description: "Assessment and management of headaches, seizures, neuropathy, stroke recovery, and other neurological conditions.", icon: Brain },
+  { title: "Kidney Diseases", description: "Evaluation and care for kidney infections, chronic kidney disease, kidney stones, and related concerns.", icon: Droplets },
+  { title: "Rheumatological Diseases", description: "Diagnosis and treatment of arthritis, autoimmune disorders, joint pain, and inflammatory conditions.", icon: Bone },
+  { title: "Heart Diseases", description: "Care for heart-related conditions including chest pain, heart failure, rhythm disorders, and cardiovascular risk management.", icon: HeartPulse },
 ];
 
 export const detailedTreatments = [

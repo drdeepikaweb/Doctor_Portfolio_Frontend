@@ -24,14 +24,20 @@ export function Header() {
       <div className="bg-cyan-800 text-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 text-sm sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div>
-            <p className="font-extrabold text-xl">{clinic.doctor}</p>
-            <p className="text-cyan-50 text-lg">{clinic.credentials}</p>
-            <p className="text-cyan-50 text-lg">{clinic.tagline}</p>
+            <p className="font-extrabold text-xl py-1">{clinic.doctor}</p>
+            <p className="text-cyan-50 text-lg py-1">{clinic.credentials}</p>
+            <p className="text-cyan-50 text-lg py-1">{clinic.hospital}</p>
+            <p className="text-cyan-50 text-lg py-1">{clinic.achievement}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <a className="inline-flex items-center gap-2 text-lg" href={`mailto:${clinic.email}`}><Mail className="h-4 w-4" /> {clinic.email}</a>
-            <a className="inline-flex items-center gap-2 text-lg" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
-            <AppointmentModal trigger={<Button variant="secondary" size="lg">Book Appointment</Button>} />
+          <div className="flex flex-col gap-10 sm:flex-row sm:items-center items-start">
+            <div className="flex flex-wrap flex-col items-start gap-2">
+              <a className="inline-flex items-center gap-2 text-lg" href={`mailto:${clinic.email}`}><Mail className="h-4 w-4" /> {clinic.email}</a>
+              <a className="inline-flex items-center gap-2 text-lg" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
+              <p className="text-white text-lg">{clinic.tagline}</p>
+            </div>
+            <div className="flex flex-wrap flex-col items-center gap-4">
+              <AppointmentModal trigger={<Button variant="secondary" size="xl">Book Appointment</Button>} />
+            </div>
           </div>
         </div>
       </div>

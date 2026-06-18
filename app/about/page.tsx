@@ -66,19 +66,6 @@ export default function AboutPage() {
             <p className="mt-3 leading-7 text-slate-700">Become a trusted healthcare partner for patients and families through dependable medical guidance and compassionate care.</p>
           </div>
         </div>
-
-        <div className="mt-20">
-          <SectionHeading eyebrow="Credentials" title="Achievements & Certifications" />
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {["MBBS", "DNB", "MD (General Medicine)", "Internal Medicine Practice"].map((item, index) => (
-              <div key={item} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                {index < 3 ? <GraduationCap className="mb-4 h-7 w-7 text-cyan-700" /> : <Award className="mb-4 h-7 w-7 text-cyan-700" />}
-                <h3 className="font-semibold text-slate-950">{item}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Qualification and professional expertise supporting trusted patient care.</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

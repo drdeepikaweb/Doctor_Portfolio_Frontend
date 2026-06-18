@@ -70,10 +70,6 @@ export default function Home() {
                 priority
               />
             </div>
-            <div className="absolute -bottom-6 left-0 rounded-md bg-white p-4 shadow-xl ring-1 ring-slate-200">
-              <p className="text-sm font-semibold text-slate-950">Patient-focused care</p>
-              <p className="text-sm text-slate-600">Clinic and online consultations</p>
-            </div>
           </MotionSection>
         </div>
       </section>
@@ -122,14 +118,11 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading eyebrow="Treatments" title="General medicine services and chronic disease support" centered />
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {treatments.slice(0, 11).map(({ title, description, icon: Icon }) => (
+            {treatments.slice(0, 15).map(({ title, description, icon: Icon }) => (
               <div key={title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-cyan-200 hover:shadow-lg">
                 <Icon className="mb-4 h-7 w-7 text-teal-600" />
                 <h3 className="font-semibold text-slate-950">{title}</h3>
                 <p className="mt-2 min-h-16 text-sm leading-6 text-slate-600">{description}</p>
-                <Button asChild variant="link" className="mt-4 px-0">
-                  <Link href="/treatments">Learn More</Link>
-                </Button>
               </div>
             ))}
           </div>
