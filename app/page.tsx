@@ -33,6 +33,9 @@ export default function Home() {
         <div className="mx-auto grid min-h-170 max-w-7xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
           <MotionSection className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
+              Consultation Timings: Every day, 10 AM - 2 PM | 5 PM - 8 PM
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
               <Activity className="h-4 w-4" />
               Comprehensive Internal Medicine & Preventive Healthcare
             </div>

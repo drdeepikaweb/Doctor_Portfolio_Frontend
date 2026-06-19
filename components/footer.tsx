@@ -22,13 +22,8 @@ export function Footer() {
   const [visitors, setVisitors] = useState<number | null>(null);
 
   useEffect(() => {
-    const countedKey = "clinic_visitor_counted";
-    const counted = window.localStorage.getItem(countedKey);
-    const visitorRequest = counted ? api.getVisitors() : api.incrementVisitors();
-
-    visitorRequest
+    api.incrementVisitors()
       .then((data) => {
-        if (!counted) window.localStorage.setItem(countedKey, "1");
         setVisitors(data.visitor_count);
       })
       .catch(() => setVisitors(0));
