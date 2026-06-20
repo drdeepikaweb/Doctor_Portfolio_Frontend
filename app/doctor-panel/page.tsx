@@ -341,7 +341,6 @@ function ConsultationsTable({
           <tr>
             <th className="px-6 py-4 font-extrabold">Patient Details</th>
             <th className="px-6 py-4 font-extrabold">Preferred Date & Time</th>
-            <th className="px-6 py-4 font-extrabold">Concern</th>
             <th className="px-6 py-4 font-extrabold text-right">Actions</th>
           </tr>
         </thead>
@@ -368,11 +367,7 @@ function ConsultationsTable({
                     </p>
                   )}
                 </td>
-                <td className="max-w-xl px-6 py-4 leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
-                  {consultation.symptoms.length > 120 
-                    ? `${consultation.symptoms.slice(0, 120)}...` 
-                    : consultation.symptoms}
-                </td>
+
                 <td className="px-6 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-3">
                     <button
@@ -551,13 +546,6 @@ function ConsultationDetailView({
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Address</h3>
             <p className="text-slate-700 font-semibold">{consultation.address}</p>
           </div>
-
-          <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Symptoms / Concern</h3>
-            <p className="text-slate-800 font-semibold bg-slate-50/50 border border-slate-100 p-4 rounded-lg leading-relaxed whitespace-pre-line text-base">
-              {consultation.symptoms}
-            </p>
-          </div>
         </div>
 
         <div className="border-t border-slate-100 pt-6 grid gap-6 sm:grid-cols-2">
@@ -631,7 +619,6 @@ function ConsultationDetailView({
               <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold">
                 <tr>
                   <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Symptoms / Concern</th>
                   <th className="px-4 py-3">Reports</th>
                   <th className="px-4 py-3">Status</th>
                 </tr>
@@ -642,7 +629,6 @@ function ConsultationDetailView({
                   return (
                     <tr key={record.id} className="hover:bg-slate-50/50 align-top">
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(record.created_at)}</td>
-                      <td className="px-4 py-3 text-slate-700 max-w-md whitespace-pre-wrap leading-relaxed">{record.symptoms}</td>
                       <td className="px-4 py-3">
                         {recordDocs.length ? (
                           <div className="flex flex-col gap-1">

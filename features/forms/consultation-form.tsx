@@ -25,7 +25,6 @@ const schema = z.object({
   phone: z.string().min(10, "Enter a valid phone number"),
   email: z.string().email("Enter a valid email").optional().or(z.literal("")),
   address: z.string().min(5, "Enter full address"),
-  symptoms: z.string().min(10, "Describe symptoms / medical concerns (minimum 10 characters)"),
   preferred_date: z.string().min(1, "Choose a preferred date").refine((value) => value >= getTodayDateInputValue(), "Preferred date cannot be in the past"),
   preferred_time: z.string().min(1, "Choose a preferred time slot"),
   documents: z.any().optional(),
@@ -165,7 +164,6 @@ export function ConsultationForm() {
       phone: "",
       email: "",
       address: "",
-      symptoms: "",
       preferred_date: "",
       preferred_time: "",
       paymentCategory: "",
@@ -238,7 +236,6 @@ export function ConsultationForm() {
           formData.append("phone", values.phone);
           if (values.email) formData.append("email", values.email);
           formData.append("address", values.address);
-          formData.append("symptoms", values.symptoms);
           formData.append("preferred_date", values.preferred_date);
           formData.append("preferred_time", values.preferred_time);
           formData.append("payment_category", values.paymentCategory);
@@ -311,7 +308,7 @@ export function ConsultationForm() {
           </label>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Phone Number" registration={register("phone")} error={errors.phone} />
+          <Field label="Phone Number (WhatsApp)" registration={register("phone")} error={errors.phone} />
           <Field label="Email Address (optional)" type="email" registration={register("email")} error={errors.email} />
         </div>
         <Field label="Address" registration={register("address")} error={errors.address} />
@@ -345,8 +342,6 @@ export function ConsultationForm() {
           </label>
         </div>
 
-        <TextAreaField label="Describe symptoms / medical concerns *" registration={register("symptoms")} error={errors.symptoms} />
-        
         <label className="block">
           <span className="text-sm font-semibold text-slate-800">Upload previous lab report, prescription, blood report, X-ray, MRI, CT Scan, etc.</span>
           <input

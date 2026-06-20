@@ -63,7 +63,6 @@ export type ConsultationRequest = {
   phone: string;
   email: string | null;
   address: string;
-  symptoms: string;
   preferred_date: string | null;
   preferred_time: string | null;
   is_completed: boolean;

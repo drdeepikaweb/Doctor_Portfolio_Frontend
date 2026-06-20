@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { SectionHeading } from "@/components/section-heading";
 import { Button } from "@/components/ui/button";
-import { detailedTreatments } from "@/lib/content";
+import { treatments } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Treatments",
@@ -24,22 +24,15 @@ export default function TreatmentsPage() {
           centered
         />
         <div className="mt-12 space-y-8">
-          {detailedTreatments.map((treatment) => (
-            <article key={treatment} className="rounded-lg border border-slate-200 bg-slate-50 p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-slate-950">{treatment}</h2>
-              <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                {sections.map((section) => (
-                  <div key={section} className="rounded-lg bg-white p-5 shadow-sm">
-                    <CheckCircle2 className="mb-3 h-5 w-5 text-teal-600" />
-                    <h3 className="font-semibold text-slate-950">{section}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      {copyFor(section, treatment)}
-                    </p>
-                  </div>
-                ))}
+          {treatments.map((treatment) => (
+            <article key={treatment.title} className="rounded-lg border border-slate-200 bg-slate-50 p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-slate-950">{treatment.title}</h2>
+              <div className="mt-4 grid gap-5 ">
+                <p className="mt-2 text-lg leading-6 text-slate-600">
+                  {treatment.description}
+                </p>
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Button asChild><Link href="/appointment">Book Appointment</Link></Button>
                 <Button asChild variant="outline"><Link href="/online-consultation">Request Online Consultation</Link></Button>
               </div>
             </article>
