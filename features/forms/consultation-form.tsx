@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -26,10 +26,13 @@ const schema = z.object({
   email: z.string().email("Enter a valid email").optional().or(z.literal("")),
   address: z.string().min(5, "Enter full address"),
   symptoms: z.string().min(10, "Describe symptoms / medical concerns (minimum 10 characters)"),
+  preferred_date: z.string().min(1, "Choose a preferred date").refine((value) => value >= getTodayDateInputValue(), "Preferred date cannot be in the past"),
+  preferred_time: z.string().min(1, "Choose a preferred time slot"),
   documents: z.any().optional(),
   paymentCategory: z.string().min(1, "Select payment category"),
   aadhaar_no: z.string().optional(),
   id_document: z.any().optional(),
+  agree_contact_time: z.boolean().refine((val) => val === true, "You must accept this contact commitment"),
   agree_consent: z.boolean().refine((val) => val === true, "You must read and agree to the Declaration and Consent Statements"),
 }).superRefine((data, ctx) => {
   const discountCategories = ["iitr_student", "iitr_faculty_staff", "iitr_retired_faculty_staff"];
@@ -109,9 +112,49 @@ export function DeclarationConsentDialog({ trigger }: { trigger: React.ReactNode
   );
 }
 
+const timeSlots = [
+  "10:00 - 10:30",
+  "10:30 - 11:00",
+  "11:00 - 11:30",
+  "11:30 - 12:00",
+  "12:00 - 12:30",
+  "12:30 - 13:00",
+  "13:00 - 13:30",
+  "13:30 - 14:00",
+  "17:00 - 17:30",
+  "17:30 - 18:00",
+  "18:00 - 18:30",
+  "18:30 - 19:00",
+  "19:00 - 19:30",
+  "19:30 - 20:00",
+];
+
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isSlotInPast(slot: string, dateStr: string): boolean {
+  const todayStr = getTodayDateInputValue();
+  if (dateStr !== todayStr) return false;
+
+  const startTime = slot.split(" - ")[0];
+  const [hours, minutes] = startTime.split(":").map(Number);
+  
+  const slotDate = new Date();
+  slotDate.setHours(hours, minutes, 0, 0);
+
+  return slotDate <= new Date();
+}
+
 export function ConsultationForm() {
   const [status, setStatus] = useState<FormStatus | null>(null);
   const [uploadedReports, setUploadedReports] = useState<File[]>([]);
+  const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
+  const today = getTodayDateInputValue();
 
   const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -123,15 +166,33 @@ export function ConsultationForm() {
       email: "",
       address: "",
       symptoms: "",
+      preferred_date: "",
+      preferred_time: "",
       paymentCategory: "",
       aadhaar_no: "",
+      agree_contact_time: false,
       agree_consent: false,
     }
   });
   
+  const preferredDateValue = useWatch({ control, name: "preferred_date" });
   const paymentCategoryValue = useWatch({ control, name: "paymentCategory" });
   const showDocumentUpload = ["iitr_student", "iitr_faculty_staff", "iitr_retired_faculty_staff"].includes(paymentCategoryValue);
   const showAadhaar = !!paymentCategoryValue;
+
+  useEffect(() => {
+    if (preferredDateValue) {
+      api.getBookedSlots(preferredDateValue)
+        .then((data) => {
+          setBlockedSlots(data.blocked_slots || []);
+        })
+        .catch(() => {
+          setBlockedSlots([]);
+        });
+    } else {
+      setBlockedSlots([]);
+    }
+  }, [preferredDateValue]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -178,6 +239,8 @@ export function ConsultationForm() {
           if (values.email) formData.append("email", values.email);
           formData.append("address", values.address);
           formData.append("symptoms", values.symptoms);
+          formData.append("preferred_date", values.preferred_date);
+          formData.append("preferred_time", values.preferred_time);
           formData.append("payment_category", values.paymentCategory);
           formData.append("consultation_fee", String(order.amount / 100));
 
@@ -252,6 +315,36 @@ export function ConsultationForm() {
           <Field label="Email Address (optional)" type="email" registration={register("email")} error={errors.email} />
         </div>
         <Field label="Address" registration={register("address")} error={errors.address} />
+        
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Preferred Date *" type="date" min={today} registration={register("preferred_date")} error={errors.preferred_date} />
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-800">Preferred Time Slot *</span>
+            <select 
+              className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" 
+              {...register("preferred_time")} 
+              disabled={!preferredDateValue}
+              aria-invalid={!!errors.preferred_time}
+            >
+              <option value="">{preferredDateValue ? "Select time slot" : "Choose preferred date first"}</option>
+              {timeSlots.map((slot) => {
+                const isBlocked = blockedSlots.includes(slot);
+                const isPast = isSlotInPast(slot, preferredDateValue);
+                const isDisabled = isBlocked || isPast;
+                let label = slot;
+                if (isBlocked) label += " (Fully Booked)";
+                else if (isPast) label += " (Past)";
+                return (
+                  <option key={slot} value={slot} disabled={isDisabled}>
+                    {label}
+                  </option>
+                );
+              })}
+            </select>
+            {errors.preferred_time ? <span className="mt-1 block text-sm text-red-600">{errors.preferred_time.message}</span> : null}
+          </label>
+        </div>
+
         <TextAreaField label="Describe symptoms / medical concerns *" registration={register("symptoms")} error={errors.symptoms} />
         
         <label className="block">
@@ -271,7 +364,7 @@ export function ConsultationForm() {
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Selected Files ({uploadedReports.length}/5):</span>
             {uploadedReports.map((file, idx) => (
               <div key={`${file.name}-${idx}`} className="flex items-center justify-between text-xs bg-white border border-slate-200 px-3 py-1.5 rounded shadow-sm">
-                <span className="truncate max-w-[250px] font-medium text-slate-700">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                <span className="truncate max-w-62.5 font-medium text-slate-700">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                 <button
                   type="button"
                   onClick={() => setUploadedReports((prev) => prev.filter((_, i) => i !== idx))}
@@ -329,25 +422,39 @@ export function ConsultationForm() {
           ))}
         </div>
 
-        <label className="flex items-start gap-3 mt-2 cursor-pointer">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500"
-            {...register("agree_consent")}
-          />
-          <span className="text-sm text-slate-700">
-            I have read the{" "}
-            <DeclarationConsentDialog
-              trigger={
-                <button type="button" className="text-cyan-700 underline font-semibold hover:text-cyan-800">
-                  Declaration and Consent Statements
-                </button>
-              }
-            />{" "}
-            and agree with the same. <span className="text-red-500">*</span>
-          </span>
-        </label>
-        {errors.agree_consent ? <span className="text-sm text-red-600">{errors.agree_consent.message}</span> : null}
+        <div className="grid gap-3 border-t border-slate-100 pt-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500"
+              {...register("agree_contact_time")}
+            />
+            <span className="text-sm text-slate-700">
+              I understand that I will likely be contacted within 10-20 minutes starting the preferred time. <span className="text-red-500">*</span>
+            </span>
+          </label>
+          {errors.agree_contact_time ? <span className="text-sm text-red-600">{errors.agree_contact_time.message}</span> : null}
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500"
+              {...register("agree_consent")}
+            />
+            <span className="text-sm text-slate-700">
+              I have read the{" "}
+              <DeclarationConsentDialog
+                trigger={
+                  <button type="button" className="text-cyan-700 underline font-semibold hover:text-cyan-800">
+                    Declaration and Consent Statements
+                  </button>
+                }
+              />{" "}
+              and agree with the same. <span className="text-red-500">*</span>
+            </span>
+          </label>
+          {errors.agree_consent ? <span className="text-sm text-red-600">{errors.agree_consent.message}</span> : null}
+        </div>
 
         <FormStatusMessage status={status} />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Processing..." : "Pay & Submit Consultation Request"}</Button>

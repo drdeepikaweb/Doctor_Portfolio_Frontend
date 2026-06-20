@@ -3,7 +3,6 @@
 import { Mail, Menu, Phone, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { AppointmentModal } from "@/features/forms/appointment-modal";
 import { clinic } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
@@ -35,9 +34,11 @@ export function Header() {
               <a className="inline-flex items-center gap-2 text-lg" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
               <p className="text-white text-lg">{clinic.tagline}</p>
             </div>
-            <div className="flex flex-wrap flex-col items-center gap-4">
-              <AppointmentModal trigger={<Button variant="secondary" size="xl">Book Appointment</Button>} />
-            </div>
+            {/* <div className="flex flex-wrap flex-col items-center gap-4">
+              <Button asChild variant="secondary" size="xl">
+                <Link href="/online-consultation">Online Consultation</Link>
+              </Button>
+            </div> */}
           </div>
         </div>
       </div>

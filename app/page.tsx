@@ -1,7 +1,6 @@
 import { Activity, ClipboardCheck, HeartPulse, ShieldCheck, Stethoscope, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { AppointmentModal } from "@/features/forms/appointment-modal";
 import { MotionSection } from "@/components/motion-section";
 import { SectionHeading } from "@/components/section-heading";
 import { TestimonialCarousel } from "@/components/testimonial-carousel";
@@ -50,8 +49,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <AppointmentModal trigger={<Button size="lg">Book Appointment</Button>} />
-              <Button asChild variant="outline" size="lg">
+              <Button asChild size="lg">
                 <Link href="/online-consultation">Online Consultation</Link>
               </Button>
             </div>
@@ -141,8 +139,7 @@ export default function Home() {
             <h2 className="mt-2 text-3xl font-bold">Book a consultation with Dr. Deepika Bhardwaj.</h2>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <AppointmentModal trigger={<Button variant="secondary">Book Appointment</Button>} />
-            <Button asChild variant="outlineLight">
+            <Button asChild variant="secondary">
               <Link href="/online-consultation">Online Consultation</Link>
             </Button>
           </div>

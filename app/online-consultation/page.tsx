@@ -82,18 +82,6 @@ function formatFullDates(dateStrings: string[]): string {
 }
 
 export default function OnlineConsultationPage() {
-  const [fullDatesText, setFullDatesText] = useState<string>("");
-
-  useEffect(() => {
-    api.getFullDates()
-      .then((data) => {
-        if (data.full_dates && data.full_dates.length > 0) {
-          setFullDatesText(formatFullDates(data.full_dates));
-        }
-      })
-      .catch((err) => console.error("Error loading full dates:", err));
-  }, []);
-
   return (
     <section className="bg-slate-50 py-20">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
@@ -106,11 +94,6 @@ export default function OnlineConsultationPage() {
           <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-md font-bold text-slate-900">Consultation Timings</h3>
             <p className="mt-2 text-sm text-slate-700">Every day, 10 AM - 2 PM | 5 PM - 8 PM.</p>
-            {fullDatesText ? (
-              <p className="mt-4 text-sm font-semibold text-red-600 animate-pulse">
-                Appointment is full for {fullDatesText}.
-              </p>
-            ) : null}
           </div>
         </div>
         <ConsultationForm />
