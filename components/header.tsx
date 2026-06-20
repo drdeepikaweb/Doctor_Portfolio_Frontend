@@ -34,11 +34,6 @@ export function Header() {
               <a className="inline-flex items-center gap-2 text-lg" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
               <p className="text-white text-lg">{clinic.tagline}</p>
             </div>
-            {/* <div className="flex flex-wrap flex-col items-center gap-4">
-              <Button asChild variant="secondary" size="xl">
-                <Link href="/online-consultation">Online Consultation</Link>
-              </Button>
-            </div> */}
           </div>
         </div>
       </div>
