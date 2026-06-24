@@ -32,7 +32,7 @@ export default function Home() {
         <div className="absolute right-12 top-36 hidden h-24 w-24 rounded-full border border-cyan-200 md:block" />
         <div className="mx-auto grid min-h-170 max-w-7xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
           <MotionSection className="space-y-8">
-            <div className="inline-flex items-center gap-2.5 rounded-full border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-2.5 text-sm font-bold text-amber-900 shadow-md">
+            <div className="inline-flex items-center gap-2.5 rounded-full border-2 border-amber-300 bg-linear-to-r from-amber-50 to-orange-50 px-5 py-2.5 text-sm font-bold text-amber-900 shadow-md">
               <span className="flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
               Consultation Timings: Every day, 10 AM - 2 PM | 5 PM - 8 PM
             </div>
@@ -64,8 +64,8 @@ export default function Home() {
           <MotionSection delay={0.15} className="relative">
             <div className="relative mx-auto aspect-4/5 max-w-md overflow-hidden rounded-lg bg-cyan-50 shadow-2xl ring-1 ring-cyan-100">
               <Image
-                src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85"
-                alt="Professional female physician in a clinic"
+                src="/images/drdeepikabhardwaj.jpeg"
+                alt="Dr. Deepika Bhardwaj"
                 fill
                 className="object-cover"
                 priority

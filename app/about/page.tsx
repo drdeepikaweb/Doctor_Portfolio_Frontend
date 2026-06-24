@@ -17,7 +17,7 @@ export default function AboutPage() {
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-slate-100">
             <Image
-              src="https://images.unsplash.com/photo-1659353888906-adb3e39b8635?auto=format&fit=crop&w=900&q=85"
+              src="/images/drdeepikabhardwaj.jpeg"
               alt="Dr. Deepika Bhardwaj profile"
               fill
               className="object-cover"
