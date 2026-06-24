@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
-import { medicalPractitionerSchema } from "@/lib/schema";
+import { medicalPractitionerSchema, localBusinessSchema } from "@/lib/schema";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,6 +11,24 @@ export const metadata: Metadata = {
   },
   description:
     "Consult Dr. Deepika Bhardwaj, MBBS, DNB, MD (General Medicine), for diabetes, hypertension, thyroid, respiratory, fever, digestive, and preventive healthcare.",
+  keywords: [
+    "Dr. Deepika Bhardwaj",
+    "Internal Medicine",
+    "MD General Medicine",
+    "Diabetes treatment New Delhi",
+    "Hypertension specialist",
+    "Thyroid clinic",
+    "Online medical consultation",
+    "Telemedicine India",
+    "Preventive healthcare",
+    "General Physician New Delhi",
+  ],
+  creator: "Dr. Deepika Bhardwaj",
+  publisher: "Dr. Deepika Bhardwaj Clinic",
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "Dr. Deepika Bhardwaj | General Medicine Consultation",
     description: "Compassionate internal medicine care, appointments, and online consultations.",
@@ -37,6 +55,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(medicalPractitionerSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
         />
         <AppShell>{children}</AppShell>
       </body>

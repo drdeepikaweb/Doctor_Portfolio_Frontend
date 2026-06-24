@@ -75,6 +75,8 @@ export type ConsultationRequest = {
   razorpay_order_id: string | null;
   razorpay_payment_id: string | null;
   created_at: string;
+  submission_id?: string | null;
+  is_reconsultation?: boolean;
 };
 
 export function getErrorMessage(error: unknown) {

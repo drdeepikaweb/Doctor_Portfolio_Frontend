@@ -27,6 +27,8 @@ const translations = {
     phonePlaceholder: "Enter a 10-digit phone number",
     email: "Email Address (optional)",
     emailPlaceholder: "Enter email address",
+    reconsultationId: "Submission ID (if reconsulting within a week)",
+    reconsultationIdPlaceholder: "e.g. AAA200002606",
     address: "Address (for Bill)",
     addressPlaceholder: "Enter full address",
     preferredDate: "Preferred Date",
@@ -44,7 +46,7 @@ const translations = {
     agreeContactTime: "I understand that I will likely be contacted within 15 minutes.",
     agreeConsent: "I have read the Declaration and Consent Statements and agree with the same.",
     declarationLink: "Declaration and Consent Statements",
-    submitButton: "Pay & Submit Consultation Request",
+    submitButton: "Pay and submit consultation request",
     submitting: "Processing...",
     validationError: "Validation Error: Please fill in all required fields correctly.",
     successMessage: "Consultation request and payment submitted successfully.",
@@ -77,6 +79,8 @@ const translations = {
     phonePlaceholder: "10 अंकों का फ़ोन नंबर दर्ज करें",
     email: "ईमेल पता (वैकल्पिक)",
     emailPlaceholder: "ईमेल पता दर्ज करें",
+    reconsultationId: "सबमिशन आईडी (यदि एक सप्ताह के भीतर फिर से परामर्श कर रहे हैं)",
+    reconsultationIdPlaceholder: "जैसे: AAA200002606",
     address: "पता (बिल के लिए)",
     addressPlaceholder: "पूरा पता दर्ज करें",
     preferredDate: "पसंदीदा तारीख",
@@ -225,18 +229,27 @@ export function ConsultationForm() {
       preferred_date: z.string().min(1, language === "hi" ? "कृपया पसंदीदा तारीख चुनें" : "Choose a preferred date").refine((value) => value >= getTodayDateInputValue(), language === "hi" ? "पसंदीदा तारीख अतीत में नहीं हो सकती" : "Preferred date cannot be in the past"),
       preferred_time: z.string().min(1, language === "hi" ? "कृपया पसंदीदा समय स्लॉट चुनें" : "Choose a preferred time slot"),
       documents: z.any().optional(),
-      paymentCategory: z.string().min(1, language === "hi" ? "कृपया भुगतान विकल्प चुनें" : "Select payment category"),
+      reconsultation_id: z.string().optional().or(z.literal("")),
+      paymentCategory: z.string().optional().or(z.literal("")),
       id_document: z.any().optional(),
       agree_contact_time: z.boolean().refine((val) => val === true, language === "hi" ? "आपको इसे स्वीकार करना होगा" : "You must accept this contact commitment"),
       agree_consent: z.boolean().refine((val) => val === true, language === "hi" ? "आपको घोषणा और सहमति स्वीकार करनी होगी" : "You must read and agree to the Declaration and Consent Statements"),
     }).superRefine((data, ctx) => {
-      if (data.paymentCategory === "iitr_student") {
-        if (!data.id_document || !data.id_document[0]) {
+      if (!data.reconsultation_id) {
+        if (!data.paymentCategory) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: language === "hi" ? "छात्र आईडी अपलोड करना आवश्यक है" : "Student ID document upload is required",
-            path: ["id_document"],
+            message: language === "hi" ? "कृपया भुगतान विकल्प चुनें" : "Select payment category",
+            path: ["paymentCategory"],
           });
+        } else if (data.paymentCategory === "iitr_student") {
+          if (!data.id_document || !data.id_document[0]) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: language === "hi" ? "छात्र आईडी अपलोड करना आवश्यक है" : "Student ID document upload is required",
+              path: ["id_document"],
+            });
+          }
         }
       }
     });
@@ -253,6 +266,7 @@ export function ConsultationForm() {
       address: "",
       preferred_date: "",
       preferred_time: "",
+      reconsultation_id: "",
       paymentCategory: "",
       agree_contact_time: false,
       agree_consent: false,
@@ -261,6 +275,14 @@ export function ConsultationForm() {
   
   const preferredDateValue = useWatch({ control, name: "preferred_date" });
   const paymentCategoryValue = useWatch({ control, name: "paymentCategory" });
+  const reconsultationIdValue = useWatch({ control, name: "reconsultation_id" });
+
+  const submitButtonText = useMemo(() => {
+    if (reconsultationIdValue && reconsultationIdValue.trim() !== "") {
+      return language === "hi" ? "परामर्श अनुरोध जमा करें" : "Submit consultation request";
+    }
+    return t.submitButton;
+  }, [reconsultationIdValue, t.submitButton, language]);
 
   useEffect(() => {
     if (preferredDateValue) {
@@ -292,6 +314,33 @@ export function ConsultationForm() {
   async function onSubmit(values: any) {
     setStatus(null);
     try {
+      if (values.reconsultation_id && values.reconsultation_id.trim() !== "") {
+        setStatus({ type: "info", message: language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting..." });
+        
+        const formData = new FormData();
+        formData.append("name", values.name);
+        formData.append("age", String(values.age));
+        formData.append("gender", values.gender);
+        formData.append("phone", values.phone);
+        if (values.email) formData.append("email", values.email);
+        formData.append("address", values.address);
+        formData.append("preferred_date", values.preferred_date);
+        formData.append("preferred_time", values.preferred_time);
+        formData.append("reconsultation_id", values.reconsultation_id.trim());
+
+        uploadedReports.forEach((document) => formData.append("documents", document));
+
+        try {
+          await api.createConsultation(formData);
+          setStatus({ type: "success", message: t.successMessage });
+          reset();
+          setUploadedReports([]);
+        } catch (error) {
+          setStatus({ type: "error", message: getErrorMessage(error) });
+        }
+        return;
+      }
+
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setStatus({ type: "error", message: language === "hi" ? "रेजरपे भुगतान पोर्टल लोड करने में विफल। इंटरनेट जांचें।" : "Failed to load Razorpay payment portal. Check your internet connection." });
@@ -448,20 +497,29 @@ export function ConsultationForm() {
           </div>
         ) : null}
 
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-800">{t.paymentOption} *</span>
-          <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
-            <option value="">{t.selectPayment}</option>
-            {paymentOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
-              </option>
-            ))}
-          </select>
-          {errors.paymentCategory ? <span className="mt-1 block text-sm text-red-600">{(errors.paymentCategory as any).message}</span> : null}
-        </label>
+        <Field
+          label={t.reconsultationId}
+          placeholder={t.reconsultationIdPlaceholder}
+          registration={register("reconsultation_id")}
+          error={errors.reconsultation_id}
+        />
 
-        {paymentCategoryValue === "iitr_student" ? (
+        {!reconsultationIdValue && (
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-800">{t.paymentOption} *</span>
+            <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
+              <option value="">{t.selectPayment}</option>
+              {paymentOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
+                </option>
+              ))}
+            </select>
+            {errors.paymentCategory ? <span className="mt-1 block text-sm text-red-600">{(errors.paymentCategory as any).message}</span> : null}
+          </label>
+        )}
+
+        {paymentCategoryValue === "iitr_student" && !reconsultationIdValue ? (
           <label className="block">
             <span className="text-sm font-semibold text-slate-800">{t.uploadId} <span className="text-red-500">*</span></span>
             <input
@@ -475,14 +533,16 @@ export function ConsultationForm() {
           </label>
         ) : null}
 
-        <div className="grid gap-2 rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
-          <p className="font-bold text-cyan-900 border-b border-cyan-200/50 pb-1 col-span-2">{t.feeBannerTitle}</p>
-          {paymentOptions.map((option) => (
-            <p key={option.value} className="font-semibold">
-              {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
-            </p>
-          ))}
-        </div>
+        {!reconsultationIdValue && (
+          <div className="grid gap-2 rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
+            <p className="font-bold text-cyan-900 border-b border-cyan-200/50 pb-1 col-span-2">{t.feeBannerTitle}</p>
+            {paymentOptions.map((option) => (
+              <p key={option.value} className="font-semibold">
+                {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="grid gap-3 border-t border-slate-100 pt-4">
           <label className="flex items-start gap-3 cursor-pointer">
@@ -519,7 +579,7 @@ export function ConsultationForm() {
         </div>
 
         <FormStatusMessage status={status} />
-        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t.submitting : t.submitButton}</Button>
+        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t.submitting : submitButtonText}</Button>
       </div>
     </form>
   );
