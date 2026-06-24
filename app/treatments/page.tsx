@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { SectionHeading } from "@/components/section-heading";
 import { Button } from "@/components/ui/button";
 import { treatments } from "@/lib/content";
+import { ConsultationButton } from "@/components/consultation-button";
 
 export const metadata: Metadata = {
   title: "Treatments",
@@ -23,6 +24,9 @@ export default function TreatmentsPage() {
           description="Structured evaluation and treatment plans for common and complex general medicine concerns."
           centered
         />
+        <div className="mt-6 flex justify-center">
+          <ConsultationButton size="lg" />
+        </div>
         <div className="mt-12 space-y-8">
           {treatments.map((treatment) => (
             <article key={treatment.title} className="rounded-lg border border-slate-200 bg-slate-50 p-6 md:p-8">
@@ -32,11 +36,11 @@ export default function TreatmentsPage() {
                   {treatment.description}
                 </p>
               </div>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Button asChild variant="outline"><Link href="/online-consultation">Request Online Consultation</Link></Button>
-              </div>
             </article>
           ))}
+        </div>
+        <div className="mt-10 flex justify-center">
+          <ConsultationButton size="lg" />
         </div>
       </div>
     </section>

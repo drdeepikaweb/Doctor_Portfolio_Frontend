@@ -5,15 +5,13 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, ContactMessage, ConsultationRequest, DoctorProfile, getErrorMessage } from "@/services/api";
+import { api, ContactMessage, ConsultationRequest, DoctorProfile, getErrorMessage, API_BASE_URL } from "@/services/api";
 
 const tokenKey = "doctor_panel_token";
 
 const paymentLabels: Record<string, string> = {
-  iitr_student: "IITR Students",
-  iitr_faculty_staff: "IITR Faculty/Staff",
-  iitr_retired_faculty_staff: "IITR Retired Faculty/Staff",
-  others: "All Others",
+  iitr_student: "For IITR Students (Discounted)",
+  others: "For All Others (CGHS rate)",
 };
 
 type PanelTab = "consultations" | "contacts";
@@ -29,6 +27,9 @@ export default function DoctorPanelPage() {
   const [loading, setLoading] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
+  const [marqueeText, setMarqueeText] = useState("");
+  const [savingMarquee, setSavingMarquee] = useState(false);
+  const [marqueeStatus, setMarqueeStatus] = useState("");
 
   const isLoggedIn = Boolean(token && doctor);
 
@@ -48,16 +49,18 @@ export default function DoctorPanelPage() {
     setLoading(true);
     setStatus("");
     try {
-      const [profileData, contactData, consultationData, visitorData] = await Promise.all([
+      const [profileData, contactData, consultationData, visitorData, marqueeData] = await Promise.all([
         api.getDoctorProfile(activeToken),
         api.listDoctorContacts(activeToken),
         api.listDoctorConsultations(activeToken),
         api.getVisitors(),
+        fetch(`${API_BASE_URL}/settings/marquee_info`).then((res) => res.ok ? res.json() : { value: "" }).catch(() => ({ value: "" })),
       ]);
       setDoctor(profileData.doctor);
       setContacts(contactData.contacts);
       setConsultations(consultationData.consultations);
       setVisitorCount(visitorData.visitor_count);
+      setMarqueeText(marqueeData.value || "");
     } catch (error) {
       setStatus(getErrorMessage(error));
       clearSession();
@@ -65,6 +68,55 @@ export default function DoctorPanelPage() {
       setLoading(false);
     }
   }, [clearSession, token]);
+
+  async function handleSaveMarquee() {
+    setSavingMarquee(true);
+    setMarqueeStatus("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/marquee_info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ value: marqueeText }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to save announcement");
+      }
+      setMarqueeStatus("Success: Announcement updated!");
+      setTimeout(() => setMarqueeStatus(""), 3000);
+    } catch (err: any) {
+      setMarqueeStatus(err.message || "Failed to update announcement");
+    } finally {
+      setSavingMarquee(false);
+    }
+  }
+
+  async function handleRemoveMarquee() {
+    setSavingMarquee(true);
+    setMarqueeStatus("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/marquee_info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ value: "" }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to clear announcement");
+      }
+      setMarqueeText("");
+      setMarqueeStatus("Success: Announcement removed!");
+      setTimeout(() => setMarqueeStatus(""), 3000);
+    } catch (err: any) {
+      setMarqueeStatus(err.message || "Failed to clear announcement");
+    } finally {
+      setSavingMarquee(false);
+    }
+  }
 
   useEffect(() => {
     if (!token || doctor) return;
@@ -236,6 +288,46 @@ export default function DoctorPanelPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Announcement / Marquee Settings */}
+        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
+            <span>📢</span> Announcement Banner (Marquee)
+          </h2>
+          <p className="text-xs text-slate-500 font-semibold mb-4">
+            Add information (e.g., doctor unavailability) to display as a marquee banner on the home page. Leave blank to hide the banner.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              value={marqueeText}
+              onChange={(e) => setMarqueeText(e.target.value)}
+              placeholder="e.g. The doctor will not be available on 26 June 2026"
+              className="flex-1 h-11 border-slate-300"
+            />
+            <Button
+              onClick={handleSaveMarquee}
+              disabled={savingMarquee}
+              className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer"
+            >
+              {savingMarquee ? "Saving..." : "Update Announcement"}
+            </Button>
+            {marqueeText && (
+              <Button
+                variant="outline"
+                onClick={handleRemoveMarquee}
+                disabled={savingMarquee}
+                className="h-11 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-6 cursor-pointer"
+              >
+                Clear / Remove
+              </Button>
+            )}
+          </div>
+          {marqueeStatus && (
+            <p className={`mt-2 text-xs font-bold ${marqueeStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
+              {marqueeStatus}
+            </p>
+          )}
         </div>
 
         {/* Tab Navigation */}

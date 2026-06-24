@@ -3,9 +3,11 @@
 import { Mail, Menu, Phone, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
 import { clinic } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import { useLanguage } from "./language-context";
 
 const nav = [
   ["Home", "/"],
@@ -17,22 +19,54 @@ const nav = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
 
   return (
     <header className="top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="bg-cyan-800 text-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 text-sm sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div>
-            <p className="font-extrabold text-xl py-1">{clinic.doctor}</p>
-            <p className="text-cyan-50 text-lg py-1">{clinic.credentials}</p>
-            <p className="text-cyan-50 text-lg py-1">{clinic.hospital}</p>
-            <p className="text-cyan-50 text-lg py-1">{clinic.achievement}</p>
+          <div className="flex items-center gap-4 py-1">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-white shadow-inner">
+              <Image
+                src="/images/doc-logo.jpg"
+                alt={clinic.doctor}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="font-extrabold text-xl py-0.5">{clinic.doctor}</p>
+              <p className="text-cyan-50 text-lg py-0.5">{clinic.credentials}</p>
+              <p className="text-cyan-50 text-lg py-0.5">{clinic.hospital}</p>
+              <p className="text-cyan-50 text-lg py-0.5">{clinic.achievement}</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-10 sm:flex-row sm:items-center items-start">
+          <div className="flex flex-col gap-8 sm:flex-row sm:items-center items-start">
             <div className="flex flex-wrap flex-col items-start gap-2">
               <a className="inline-flex items-center gap-2 text-lg" href={`mailto:${clinic.email}`}><Mail className="h-4 w-4" /> {clinic.email}</a>
               <a className="inline-flex items-center gap-2 text-lg" href={`tel:${clinic.phone}`}><Phone className="h-4 w-4" /> {clinic.phone}</a>
               <p className="text-white text-lg">{clinic.tagline}</p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center gap-1.5 rounded-lg bg-cyan-900/60 p-1.5 border border-cyan-700/50">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer", language === "en" ? "bg-white text-cyan-900 shadow-sm" : "text-cyan-100 hover:bg-white/10")}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => setLanguage("hi")}
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer", language === "hi" ? "bg-white text-cyan-900 shadow-sm" : "text-cyan-100 hover:bg-white/10")}
+                >
+                  हिन्दी
+                </button>
+              </div>
+              <Button asChild variant="secondary" size="xl">
+                <Link href="/online-consultation">
+                  {language === "hi" ? "ऑनलाइन परामर्श बुक करें" : "Request Online Consultation"}
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

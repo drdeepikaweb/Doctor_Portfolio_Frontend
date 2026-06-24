@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ConsultationForm } from "@/features/forms/consultation-form";
 import { SectionHeading } from "@/components/section-heading";
 import { api } from "@/services/api";
+import { Activity } from "lucide-react";
 
 function formatFullDates(dateStrings: string[]): string {
   if (!dateStrings.length) return "";
@@ -91,9 +92,16 @@ export default function OnlineConsultationPage() {
             title="Secure consultation request"
             description="Submit patient details and relevant medical documents. Accepted formats: PDF, JPG, PNG up to 10 MB."
           />
-          <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-md font-bold text-slate-900">Consultation Timings</h3>
-            <p className="mt-2 text-sm text-slate-700">Every day, 10 AM - 2 PM | 5 PM - 8 PM.</p>
+          <div className="mt-8 rounded-xl border-2 border-cyan-500 bg-cyan-50/50 p-6 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-cyan-500 p-2 text-white">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-cyan-950 uppercase tracking-wider">Consultation Timings</h3>
+                <p className="mt-1 text-lg font-black text-cyan-900">Every day, 10 AM - 2 PM | 5 PM - 8 PM</p>
+              </div>
+            </div>
           </div>
         </div>
         <ConsultationForm />

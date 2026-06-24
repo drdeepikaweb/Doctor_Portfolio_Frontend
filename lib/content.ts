@@ -21,7 +21,7 @@ export const clinic = {
   tagline: "Registration Number: UKMC-14488",
   phone: "+91 83078 42191",
   email: "bhardwajdeepika16@gmail.com",
-  achievement: "AIR-147 | Haryana State Rank - 1 in NEET-PG 2020",
+  achievement: "AIR-147 | State Rank - 1 in NEET-PG 2020",
   hospital: "LHMC & RML Hospital, New Delhi",
   address: "Clinic Address, New Delhi, India",
   mapQuery: "New Delhi medical clinic",
