@@ -764,14 +764,6 @@ function ConsultationDetailView({
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Verification Proofs</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-slate-500 font-medium mb-1">Aadhaar Card No.</p>
-                {consultation.aadhaar_no ? (
-                  <span className="font-mono bg-slate-50 border border-slate-200 px-2.5 py-1 rounded text-sm text-slate-800 font-medium tracking-wider">{consultation.aadhaar_no}</span>
-                ) : (
-                  <span className="text-slate-400 text-sm font-medium">N/A</span>
-                )}
-              </div>
-              <div>
                 <p className="text-xs text-slate-500 font-medium mb-1">Category Verification ID</p>
                 {consultation.id_document_url ? (
                   <a className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100 border border-cyan-200/50 shadow-sm transition cursor-pointer" href={consultation.id_document_url} target="_blank" rel="noreferrer">
