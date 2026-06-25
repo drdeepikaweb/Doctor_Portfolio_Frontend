@@ -211,6 +211,7 @@ export function ConsultationForm() {
   const [status, setStatus] = useState<FormStatus | null>(null);
   const [uploadedReports, setUploadedReports] = useState<File[]>([]);
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
+  const [loadingOverlay, setLoadingOverlay] = useState<string | null>(null);
   const today = getTodayDateInputValue();
 
   const paymentOptions = useMemo(() => [
@@ -315,6 +316,7 @@ export function ConsultationForm() {
     setStatus(null);
     try {
       if (values.reconsultation_id && values.reconsultation_id.trim() !== "") {
+        setLoadingOverlay(language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting...");
         setStatus({ type: "info", message: language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting..." });
         
         const formData = new FormData();
@@ -337,13 +339,18 @@ export function ConsultationForm() {
           setUploadedReports([]);
         } catch (error) {
           setStatus({ type: "error", message: getErrorMessage(error) });
+        } finally {
+          setLoadingOverlay(null);
         }
         return;
       }
 
+      setLoadingOverlay(language === "hi" ? "भुगतान पोर्टल लोड किया जा रहा है..." : "Loading payment portal...");
+      
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setStatus({ type: "error", message: language === "hi" ? "रेजरपे भुगतान पोर्टल लोड करने में विफल। इंटरनेट जांचें।" : "Failed to load Razorpay payment portal. Check your internet connection." });
+        setLoadingOverlay(null);
         return;
       }
 
@@ -357,6 +364,7 @@ export function ConsultationForm() {
         description: `${language === "hi" ? "ऑनलाइन परामर्श शुल्क" : "Online Consultation Fee"} - ${paymentOptions.find(o => o.value === values.paymentCategory)?.label}`,
         order_id: order.id,
         handler: async function (response: any) {
+          setLoadingOverlay(language === "hi" ? "भुगतान सत्यापित और परामर्श पंजीकृत किया जा रहा है..." : "Verifying payment & registering consultation...");
           setStatus({ type: "info", message: t.paymentAuthorized });
 
           const formData = new FormData();
@@ -388,6 +396,13 @@ export function ConsultationForm() {
             setUploadedReports([]);
           } catch (error) {
             setStatus({ type: "error", message: getErrorMessage(error) });
+          } finally {
+            setLoadingOverlay(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoadingOverlay(null);
           }
         },
         prefill: {
@@ -402,185 +417,211 @@ export function ConsultationForm() {
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
+      setLoadingOverlay(null);
     } catch (error) {
       setStatus({ type: "error", message: getErrorMessage(error) });
+      setLoadingOverlay(null);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, (errs) => {
-      console.log("Validation errors:", errs);
-      setStatus({ type: "error", message: t.validationError });
-    })} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="grid gap-4">
-        <Field label={t.fullName + " *"} placeholder={t.fullNamePlaceholder} registration={register("name")} error={errors.name} />
-        
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t.age + " *"} type="number" placeholder={t.agePlaceholder} registration={register("age")} error={errors.age} />
+    <>
+      <form onSubmit={handleSubmit(onSubmit, (errs) => {
+        console.log("Validation errors:", errs);
+        setStatus({ type: "error", message: t.validationError });
+      })} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-4">
+          <Field label={t.fullName + " *"} placeholder={t.fullNamePlaceholder} registration={register("name")} error={errors.name} />
           
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-800">{t.gender} *</span>
-            <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("gender")} aria-invalid={!!errors.gender}>
-              <option value="">{t.selectGender}</option>
-              <option value="female">{language === "hi" ? "महिला" : "Female"}</option>
-              <option value="male">{language === "hi" ? "पुरुष" : "Male"}</option>
-              <option value="other">{language === "hi" ? "अन्य" : "Other"}</option>
-            </select>
-            {errors.gender ? <span className="mt-1 block text-sm text-red-600">{(errors.gender as any).message}</span> : null}
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t.phone + " *"} placeholder={t.phonePlaceholder} registration={register("phone")} error={errors.phone} />
-          <Field label={t.email} type="email" placeholder={t.emailPlaceholder} registration={register("email")} error={errors.email} />
-        </div>
-
-        <Field label={t.address + " *"} placeholder={t.addressPlaceholder} registration={register("address")} error={errors.address} />
-        
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t.preferredDate + " *"} type="date" min={today} registration={register("preferred_date")} error={errors.preferred_date} />
-          
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-800">{t.preferredTime} *</span>
-            <select 
-              className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" 
-              {...register("preferred_time")} 
-              disabled={!preferredDateValue}
-              aria-invalid={!!errors.preferred_time}
-            >
-              <option value="">{preferredDateValue ? t.selectTimeSlot : t.chooseDateFirst}</option>
-              {timeSlots.map((slot) => {
-                const isBlocked = blockedSlots.includes(slot);
-                const isPast = isSlotInPast(slot, preferredDateValue);
-                const isDisabled = isBlocked || isPast;
-                let label = slot;
-                if (isBlocked) label += language === "hi" ? " (सीटें फुल)" : " (Fully Booked)";
-                else if (isPast) label += language === "hi" ? " (बीत चुका है)" : " (Past)";
-                return (
-                  <option key={slot} value={slot} disabled={isDisabled}>
-                    {label}
-                  </option>
-                );
-              })}
-            </select>
-            {errors.preferred_time ? <span className="mt-1 block text-sm text-red-600">{(errors.preferred_time as any).message}</span> : null}
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-800">{t.uploadReports}</span>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-            multiple
-            onChange={handleFileChange}
-            className="mt-2 w-full rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm cursor-pointer"
-          />
-          <span className="mt-1 block text-xs text-slate-500">{t.uploadReportsHelp}</span>
-        </label>
-
-        {uploadedReports.length > 0 ? (
-          <div className="mt-2 flex flex-col gap-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">{t.selectedFiles} ({uploadedReports.length}/5):</span>
-            {uploadedReports.map((file, idx) => (
-              <div key={`${file.name}-${idx}`} className="flex items-center justify-between text-xs bg-white border border-slate-200 px-3 py-1.5 rounded shadow-sm">
-                <span className="truncate max-w-62.5 font-medium text-slate-700">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                <button
-                  type="button"
-                  onClick={() => setUploadedReports((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-red-500 hover:text-red-700 font-bold ml-2 text-xs cursor-pointer"
-                >
-                  {t.remove}
-                </button>
-              </div>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t.age + " *"} type="number" placeholder={t.agePlaceholder} registration={register("age")} error={errors.age} />
+            
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-800">{t.gender} *</span>
+              <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("gender")} aria-invalid={!!errors.gender}>
+                <option value="">{t.selectGender}</option>
+                <option value="female">{language === "hi" ? "महिला" : "Female"}</option>
+                <option value="male">{language === "hi" ? "पुरुष" : "Male"}</option>
+                <option value="other">{language === "hi" ? "अन्य" : "Other"}</option>
+              </select>
+              {errors.gender ? <span className="mt-1 block text-sm text-red-600">{(errors.gender as any).message}</span> : null}
+            </label>
           </div>
-        ) : null}
 
-        <Field
-          label={t.reconsultationId}
-          placeholder={t.reconsultationIdPlaceholder}
-          registration={register("reconsultation_id")}
-          error={errors.reconsultation_id}
-        />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t.phone + " *"} placeholder={t.phonePlaceholder} registration={register("phone")} error={errors.phone} />
+            <Field label={t.email} type="email" placeholder={t.emailPlaceholder} registration={register("email")} error={errors.email} />
+          </div>
 
-        {!reconsultationIdValue && (
+          <Field label={t.address + " *"} placeholder={t.addressPlaceholder} registration={register("address")} error={errors.address} />
+          
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t.preferredDate + " *"} type="date" min={today} registration={register("preferred_date")} error={errors.preferred_date} />
+            
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-800">{t.preferredTime} *</span>
+              <select 
+                className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" 
+                {...register("preferred_time")} 
+                disabled={!preferredDateValue}
+                aria-invalid={!!errors.preferred_time}
+              >
+                <option value="">{preferredDateValue ? t.selectTimeSlot : t.chooseDateFirst}</option>
+                {timeSlots.map((slot) => {
+                  const isBlocked = blockedSlots.includes(slot);
+                  const isPast = isSlotInPast(slot, preferredDateValue);
+                  const isDisabled = isBlocked || isPast;
+                  let label = slot;
+                  if (isBlocked) label += language === "hi" ? " (सीटें फुल)" : " (Fully Booked)";
+                  else if (isPast) label += language === "hi" ? " (बीत चुका है)" : " (Past)";
+                  return (
+                    <option key={slot} value={slot} disabled={isDisabled}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+              {errors.preferred_time ? <span className="mt-1 block text-sm text-red-600">{(errors.preferred_time as any).message}</span> : null}
+            </label>
+          </div>
+
           <label className="block">
-            <span className="text-sm font-semibold text-slate-800">{t.paymentOption} *</span>
-            <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
-              <option value="">{t.selectPayment}</option>
-              {paymentOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
-                </option>
-              ))}
-            </select>
-            {errors.paymentCategory ? <span className="mt-1 block text-sm text-red-600">{(errors.paymentCategory as any).message}</span> : null}
-          </label>
-        )}
-
-        {paymentCategoryValue === "iitr_student" && !reconsultationIdValue ? (
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-800">{t.uploadId} <span className="text-red-500">*</span></span>
+            <span className="text-sm font-semibold text-slate-800">{t.uploadReports}</span>
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-              className="mt-2 w-full rounded-md border border-slate-300 bg-white p-2 text-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 cursor-pointer"
-              {...register("id_document")}
+              multiple
+              onChange={handleFileChange}
+              className="mt-2 w-full rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm cursor-pointer"
             />
-            <span className="mt-1 block text-xs text-slate-500">{t.uploadIdHelp}</span>
-            {errors.id_document ? <span className="mt-1 block text-sm text-red-600">{(errors.id_document as any).message}</span> : null}
+            <span className="mt-1 block text-xs text-slate-500">{t.uploadReportsHelp}</span>
           </label>
-        ) : null}
 
-        {!reconsultationIdValue && (
-          <div className="grid gap-2 rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
-            <p className="font-bold text-cyan-900 border-b border-cyan-200/50 pb-1 col-span-2">{t.feeBannerTitle}</p>
-            {paymentOptions.map((option) => (
-              <p key={option.value} className="font-semibold">
-                {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
-              </p>
-            ))}
-          </div>
-        )}
-
-        <div className="grid gap-3 border-t border-slate-100 pt-4">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500 cursor-pointer"
-              {...register("agree_contact_time")}
-            />
-            <span className="text-sm text-slate-700">
-              {t.agreeContactTime} <span className="text-red-500">*</span>
-            </span>
-          </label>
-          {errors.agree_contact_time ? <span className="text-sm text-red-600">{(errors.agree_contact_time as any).message}</span> : null}
-
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500 cursor-pointer"
-              {...register("agree_consent")}
-            />
-            <span className="text-sm text-slate-700">
-              {language === "hi" ? "मैंने " : "I have read the "}
-              <DeclarationConsentDialog
-                trigger={
-                  <button type="button" className="text-cyan-700 underline font-semibold hover:text-cyan-800 cursor-pointer">
-                    {t.declarationLink}
+          {uploadedReports.length > 0 ? (
+            <div className="mt-2 flex flex-col gap-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">{t.selectedFiles} ({uploadedReports.length}/5):</span>
+              {uploadedReports.map((file, idx) => (
+                <div key={`${file.name}-${idx}`} className="flex items-center justify-between text-xs bg-white border border-slate-200 px-3 py-1.5 rounded shadow-sm">
+                  <span className="truncate max-w-62.5 font-medium text-slate-700">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  <button
+                    type="button"
+                    onClick={() => setUploadedReports((prev) => prev.filter((_, i) => i !== idx))}
+                    className="text-red-500 hover:text-red-700 font-bold ml-2 text-xs cursor-pointer"
+                  >
+                    {t.remove}
                   </button>
-                }
-              />
-              {language === "hi" ? " को पढ़ लिया है और उससे सहमत हूँ।" : " and agree with the same."} <span className="text-red-500">*</span>
-            </span>
-          </label>
-          {errors.agree_consent ? <span className="text-sm text-red-600">{(errors.agree_consent as any).message}</span> : null}
-        </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
-        <FormStatusMessage status={status} />
-        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t.submitting : submitButtonText}</Button>
-      </div>
-    </form>
+          <Field
+            label={t.reconsultationId}
+            placeholder={t.reconsultationIdPlaceholder}
+            registration={register("reconsultation_id")}
+            error={errors.reconsultation_id}
+          />
+
+          {!reconsultationIdValue && (
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-800">{t.paymentOption} *</span>
+              <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
+                <option value="">{t.selectPayment}</option>
+                {paymentOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
+                  </option>
+                ))}
+              </select>
+              {errors.paymentCategory ? <span className="mt-1 block text-sm text-red-600">{(errors.paymentCategory as any).message}</span> : null}
+            </label>
+          )}
+
+          {paymentCategoryValue === "iitr_student" && !reconsultationIdValue ? (
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-800">{t.uploadId} <span className="text-red-500">*</span></span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                className="mt-2 w-full rounded-md border border-slate-300 bg-white p-2 text-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 cursor-pointer"
+                {...register("id_document")}
+              />
+              <span className="mt-1 block text-xs text-slate-500">{t.uploadIdHelp}</span>
+              {errors.id_document ? <span className="mt-1 block text-sm text-red-600">{(errors.id_document as any).message}</span> : null}
+            </label>
+          ) : null}
+
+          {!reconsultationIdValue && (
+            <div className="grid gap-2 rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
+              <p className="font-bold text-cyan-900 border-b border-cyan-200/50 pb-1 col-span-2">{t.feeBannerTitle}</p>
+              {paymentOptions.map((option) => (
+                <p key={option.value} className="font-semibold">
+                  {option.label}: {language === "hi" ? "रु." : "Rs."} {option.fee}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <div className="grid gap-3 border-t border-slate-100 pt-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500 cursor-pointer"
+                {...register("agree_contact_time")}
+              />
+              <span className="text-sm text-slate-700">
+                {t.agreeContactTime} <span className="text-red-500">*</span>
+              </span>
+            </label>
+            {errors.agree_contact_time ? <span className="text-sm text-red-600">{(errors.agree_contact_time as any).message}</span> : null}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500 cursor-pointer"
+                {...register("agree_consent")}
+              />
+              <span className="text-sm text-slate-700">
+                {language === "hi" ? "मैंने " : "I have read the "}
+                <DeclarationConsentDialog
+                  trigger={
+                    <button type="button" className="text-cyan-700 underline font-semibold hover:text-cyan-800 cursor-pointer">
+                      {t.declarationLink}
+                    </button>
+                  }
+                />
+                {language === "hi" ? " को पढ़ लिया है और उससे सहमत हूँ।" : " and agree with the same."} <span className="text-red-500">*</span>
+              </span>
+            </label>
+            {errors.agree_consent ? <span className="text-sm text-red-600">{(errors.agree_consent as any).message}</span> : null}
+          </div>
+
+          <FormStatusMessage status={status} />
+          <Button type="submit" disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t.submitting : submitButtonText}</Button>
+        </div>
+      </form>
+
+      {loadingOverlay && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/65 backdrop-blur-md transition-all duration-300">
+          <div className="flex flex-col items-center gap-6 rounded-2xl bg-white/95 p-8 shadow-2xl border border-slate-100 max-w-sm w-full mx-4 text-center">
+            <div className="relative flex h-16 w-16 items-center justify-center">
+              <div className="absolute h-16 w-16 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-700"></div>
+              <div className="absolute h-10 w-10 animate-ping rounded-full bg-cyan-100/50"></div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-slate-800 tracking-wide transition-all duration-300">
+                {loadingOverlay}
+              </h3>
+              <p className="text-xs font-semibold text-slate-500 max-w-[280px] mx-auto leading-relaxed">
+                {language === "hi" 
+                  ? "कृपया इस विंडो को बंद न करें या पेज को रीफ्रेश न करें।" 
+                  : "Please do not close this window or refresh the page."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
