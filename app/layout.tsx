@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
+import { PageLoader } from "@/components/page-loader";
 import { medicalPractitionerSchema, localBusinessSchema } from "@/lib/schema";
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
         />
+        <PageLoader />
         <AppShell>{children}</AppShell>
       </body>
     </html>

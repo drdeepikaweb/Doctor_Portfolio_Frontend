@@ -43,7 +43,16 @@ export function ContactForm() {
         </div>
         <TextAreaField label="Message" registration={register("message")} error={errors.message} />
         <FormStatusMessage status={status} />
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending..." : "Send Message"}</Button>
+        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+              Sending...
+            </span>
+          ) : (
+            "Send Message"
+          )}
+        </Button>
       </div>
     </form>
   );
