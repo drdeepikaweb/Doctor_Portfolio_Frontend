@@ -1,6 +1,6 @@
 "use client";
 
-import { LockKeyhole, LogOut, Mail, MessageSquareText, RefreshCw, Stethoscope, Phone, FileText } from "lucide-react";
+import { LockKeyhole, LogOut, Mail, MessageSquareText, RefreshCw, Stethoscope, Phone, FileText, Settings } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ const paymentLabels: Record<string, string> = {
   others: "For All Others (CGHS rate)",
 };
 
-type PanelTab = "consultations" | "contacts";
+type PanelTab = "consultations" | "contacts" | "settings";
 
 export default function DoctorPanelPage() {
   const [token, setToken] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem(tokenKey) || "");
@@ -37,6 +37,15 @@ export default function DoctorPanelPage() {
   const [savingBookingSettings, setSavingBookingSettings] = useState(false);
   const [bookingSettingsStatus, setBookingSettingsStatus] = useState("");
 
+  const [morningEnabled, setMorningEnabled] = useState(true);
+  const [morningStart, setMorningStart] = useState("10:00");
+  const [morningEnd, setMorningEnd] = useState("12:00");
+  const [eveningEnabled, setEveningEnabled] = useState(true);
+  const [eveningStart, setEveningStart] = useState("18:00");
+  const [eveningEnd, setEveningEnd] = useState("20:00");
+  const [savingTimingSettings, setSavingTimingSettings] = useState(false);
+  const [timingSettingsStatus, setTimingSettingsStatus] = useState("");
+
   const isLoggedIn = Boolean(token && doctor);
 
   const clearSession = useCallback(() => {
@@ -55,7 +64,21 @@ export default function DoctorPanelPage() {
     setLoading(true);
     setStatus("");
     try {
-      const [profileData, contactData, consultationData, visitorData, marqueeData, patientsSetting, gapSetting] = await Promise.all([
+      const [
+        profileData,
+        contactData,
+        consultationData,
+        visitorData,
+        marqueeData,
+        patientsSetting,
+        gapSetting,
+        mStartSetting,
+        mEndSetting,
+        mEnabledSetting,
+        eStartSetting,
+        eEndSetting,
+        eEnabledSetting
+      ] = await Promise.all([
         api.getDoctorProfile(activeToken),
         api.listDoctorContacts(activeToken),
         api.listDoctorConsultations(activeToken),
@@ -63,6 +86,12 @@ export default function DoctorPanelPage() {
         fetch(`${API_BASE_URL}/settings/marquee_info`).then((res) => res.ok ? res.json() : { value: "" }).catch(() => ({ value: "" })),
         fetch(`${API_BASE_URL}/settings/patients_per_slot`).then((res) => res.ok ? res.json() : { value: "5" }).catch(() => ({ value: "5" })),
         fetch(`${API_BASE_URL}/settings/slot_gap_minutes`).then((res) => res.ok ? res.json() : { value: "30" }).catch(() => ({ value: "30" })),
+        fetch(`${API_BASE_URL}/settings/morning_start`).then((res) => res.ok ? res.json() : { value: "10:00" }).catch(() => ({ value: "10:00" })),
+        fetch(`${API_BASE_URL}/settings/morning_end`).then((res) => res.ok ? res.json() : { value: "12:00" }).catch(() => ({ value: "12:00" })),
+        fetch(`${API_BASE_URL}/settings/morning_enabled`).then((res) => res.ok ? res.json() : { value: "true" }).catch(() => ({ value: "true" })),
+        fetch(`${API_BASE_URL}/settings/evening_start`).then((res) => res.ok ? res.json() : { value: "18:00" }).catch(() => ({ value: "18:00" })),
+        fetch(`${API_BASE_URL}/settings/evening_end`).then((res) => res.ok ? res.json() : { value: "20:00" }).catch(() => ({ value: "20:00" })),
+        fetch(`${API_BASE_URL}/settings/evening_enabled`).then((res) => res.ok ? res.json() : { value: "true" }).catch(() => ({ value: "true" })),
       ]);
       setDoctor(profileData.doctor);
       setContacts(contactData.contacts);
@@ -71,6 +100,12 @@ export default function DoctorPanelPage() {
       setMarqueeText(marqueeData.value || "");
       setPatientsPerSlot(patientsSetting.value || "5");
       setSlotGapMinutes(gapSetting.value || "30");
+      setMorningStart(mStartSetting.value || "10:00");
+      setMorningEnd(mEndSetting.value || "12:00");
+      setMorningEnabled(mEnabledSetting.value !== "false");
+      setEveningStart(eStartSetting.value || "18:00");
+      setEveningEnd(eEndSetting.value || "20:00");
+      setEveningEnabled(eEnabledSetting.value !== "false");
       setCurrentPageConsultations(1);
       setCurrentPageContacts(1);
     } catch (error) {
@@ -163,6 +198,86 @@ export default function DoctorPanelPage() {
       setBookingSettingsStatus(err.message || "Failed to update booking settings");
     } finally {
       setSavingBookingSettings(false);
+    }
+  }
+
+  async function handleSaveTimingSettings() {
+    setSavingTimingSettings(true);
+    setTimingSettingsStatus("");
+
+    if (morningEnabled && morningStart >= morningEnd) {
+      setTimingSettingsStatus("Error: Morning start time must be before end time");
+      setSavingTimingSettings(false);
+      return;
+    }
+    if (eveningEnabled && eveningStart >= eveningEnd) {
+      setTimingSettingsStatus("Error: Evening start time must be before end time");
+      setSavingTimingSettings(false);
+      return;
+    }
+
+    try {
+      const [resMStart, resMEnd, resMEnabled, resEStart, resEEnd, resEEnabled] = await Promise.all([
+        fetch(`${API_BASE_URL}/settings/morning_start`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: morningStart }),
+        }),
+        fetch(`${API_BASE_URL}/settings/morning_end`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: morningEnd }),
+        }),
+        fetch(`${API_BASE_URL}/settings/morning_enabled`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: String(morningEnabled) }),
+        }),
+        fetch(`${API_BASE_URL}/settings/evening_start`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: eveningStart }),
+        }),
+        fetch(`${API_BASE_URL}/settings/evening_end`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: eveningEnd }),
+        }),
+        fetch(`${API_BASE_URL}/settings/evening_enabled`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: String(eveningEnabled) }),
+        }),
+      ]);
+
+      if (!resMStart.ok || !resMEnd.ok || !resMEnabled.ok || !resEStart.ok || !resEEnd.ok || !resEEnabled.ok) {
+        throw new Error("Failed to save consultation timing settings");
+      }
+
+      setTimingSettingsStatus("Success: Consultation timing settings updated!");
+      setTimeout(() => setTimingSettingsStatus(""), 3000);
+    } catch (err: any) {
+      setTimingSettingsStatus(err.message || "Failed to update consultation timing settings");
+    } finally {
+      setSavingTimingSettings(false);
     }
   }
 
@@ -352,99 +467,6 @@ export default function DoctorPanelPage() {
           </div>
         </div>
 
-        {/* Announcement / Marquee Settings */}
-        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
-            <span>📢</span> Announcement Banner (Marquee)
-          </h2>
-          <p className="text-xs text-slate-500 font-semibold mb-4">
-            Add information (e.g., doctor unavailability) to display as a marquee banner on the home page. Leave blank to hide the banner.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              value={marqueeText}
-              onChange={(e) => setMarqueeText(e.target.value)}
-              placeholder="e.g. The doctor will not be available on 26 June 2026"
-              className="flex-1 h-11 border-slate-300"
-            />
-            <Button
-              onClick={handleSaveMarquee}
-              disabled={savingMarquee}
-              className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer"
-            >
-              {savingMarquee ? "Saving..." : "Update Announcement"}
-            </Button>
-            {marqueeText && (
-              <Button
-                variant="outline"
-                onClick={handleRemoveMarquee}
-                disabled={savingMarquee}
-                className="h-11 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-6 cursor-pointer"
-              >
-                Clear / Remove
-              </Button>
-            )}
-          </div>
-          {marqueeStatus && (
-            <p className={`mt-2 text-xs font-bold ${marqueeStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
-              {marqueeStatus}
-            </p>
-          )}
-        </div>
-
-        {/* Booking & Slot Settings */}
-        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
-            <span>📅</span> Booking & Slot Settings
-          </h2>
-          <p className="text-xs text-slate-500 font-semibold mb-4">
-            Configure the maximum number of patients allowed per slot and the duration gap between slots.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-end">
-            <label className="block">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Patients per Slot</span>
-              <Input
-                type="number"
-                min="1"
-                max="50"
-                value={patientsPerSlot}
-                onChange={(e) => setPatientsPerSlot(e.target.value)}
-                placeholder="e.g. 5"
-                className="mt-2 h-11 border-slate-300"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Slot Gap (Minutes)</span>
-              <select
-                value={slotGapMinutes}
-                onChange={(e) => setSlotGapMinutes(e.target.value)}
-                className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-              >
-                <option value="10">10 Minutes</option>
-                <option value="15">15 Minutes</option>
-                <option value="20">20 Minutes</option>
-                <option value="30">30 Minutes (Default)</option>
-                <option value="45">45 Minutes</option>
-                <option value="60">60 Minutes (1 Hour)</option>
-              </select>
-            </label>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSaveBookingSettings}
-                disabled={savingBookingSettings}
-                className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer w-full sm:w-auto"
-              >
-                {savingBookingSettings ? "Saving..." : "Save Settings"}
-              </Button>
-            </div>
-          </div>
-          {bookingSettingsStatus && (
-            <p className={`mt-2 text-xs font-bold ${bookingSettingsStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
-              {bookingSettingsStatus}
-            </p>
-          )}
-        </div>
-
         {/* Tab Navigation */}
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setActiveTab("consultations")} className={tabClass(activeTab === "consultations")}>
@@ -453,15 +475,20 @@ export default function DoctorPanelPage() {
           <button type="button" onClick={() => setActiveTab("contacts")} className={tabClass(activeTab === "contacts")}>
             <MessageSquareText className="h-4 w-4" /> Contact Messages
           </button>
+          <button type="button" onClick={() => setActiveTab("settings")} className={tabClass(activeTab === "settings")}>
+            <Settings className="h-4 w-4" /> Settings
+          </button>
         </div>
 
         {status ? <p className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm font-semibold text-red-700">{status}</p> : null}
         
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {loading ? "Refreshing records..." : `Showing ${currentRows} of ${activeTab === "contacts" ? contacts.length : consultations.length} records`}
+        {activeTab !== "settings" && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {loading ? "Refreshing records..." : `Showing ${currentRows} of ${activeTab === "contacts" ? contacts.length : consultations.length} records`}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Data Tables */}
         <div className="transition-all duration-300">
@@ -532,6 +559,210 @@ export default function DoctorPanelPage() {
                 </div>
               )}
             </>
+          ) : null}
+          {activeTab === "settings" ? (
+            <div className="space-y-8 animate-fadeIn">
+              {/* Announcement / Marquee Settings */}
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
+                  <span>📢</span> Announcement Banner (Marquee)
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mb-4">
+                  Add information (e.g., doctor unavailability) to display as a marquee banner on the home page. Leave blank to hide the banner.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    value={marqueeText}
+                    onChange={(e) => setMarqueeText(e.target.value)}
+                    placeholder="e.g. The doctor will not be available on 26 June 2026"
+                    className="flex-1 h-11 border-slate-300"
+                  />
+                  <Button
+                    onClick={handleSaveMarquee}
+                    disabled={savingMarquee}
+                    className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer"
+                  >
+                    {savingMarquee ? "Saving..." : "Update Announcement"}
+                  </Button>
+                  {marqueeText && (
+                    <Button
+                      variant="outline"
+                      onClick={handleRemoveMarquee}
+                      disabled={savingMarquee}
+                      className="h-11 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-6 cursor-pointer"
+                    >
+                      Clear / Remove
+                    </Button>
+                  )}
+                </div>
+                {marqueeStatus && (
+                  <p className={`mt-2 text-xs font-bold ${marqueeStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
+                    {marqueeStatus}
+                  </p>
+                )}
+              </div>
+
+              {/* Booking & Slot Settings */}
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
+                  <span>📅</span> Booking & Slot Settings
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mb-4">
+                  Configure the maximum number of patients allowed per slot and the duration gap between slots.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-end">
+                  <label className="block">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Patients per Slot</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={patientsPerSlot}
+                      onChange={(e) => setPatientsPerSlot(e.target.value)}
+                      placeholder="e.g. 5"
+                      className="mt-2 h-11 border-slate-300"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Slot Gap (Minutes)</span>
+                    <select
+                      value={slotGapMinutes}
+                      onChange={(e) => setSlotGapMinutes(e.target.value)}
+                      className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                    >
+                      <option value="10">10 Minutes</option>
+                      <option value="15">15 Minutes</option>
+                      <option value="20">20 Minutes</option>
+                      <option value="30">30 Minutes (Default)</option>
+                      <option value="45">45 Minutes</option>
+                      <option value="60">60 Minutes (1 Hour)</option>
+                    </select>
+                  </label>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveBookingSettings}
+                      disabled={savingBookingSettings}
+                      className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer w-full sm:w-auto"
+                    >
+                      {savingBookingSettings ? "Saving..." : "Save Settings"}
+                    </Button>
+                  </div>
+                </div>
+                {bookingSettingsStatus && (
+                  <p className={`mt-2 text-xs font-bold ${bookingSettingsStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
+                    {bookingSettingsStatus}
+                  </p>
+                )}
+              </div>
+
+              {/* Consultation Timing Settings */}
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
+                  <span>⏰</span> Consultation Timings Settings
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mb-4">
+                  Configure the start/end times and enable/disable the morning and evening consultation sessions.
+                </p>
+                
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Morning Session */}
+                  <div className="rounded-lg border border-slate-150 bg-slate-50/50 p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-800">Morning Session</span>
+                      <label className="relative inline-flex items-center cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={morningEnabled}
+                          onChange={(e) => setMorningEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-700"></div>
+                        <span className="ml-2 text-xs font-bold text-slate-600">{morningEnabled ? "Enabled" : "Disabled"}</span>
+                      </label>
+                    </div>
+                    
+                    <div className="grid gap-4 grid-cols-2">
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Start Time</span>
+                        <input
+                          type="time"
+                          value={morningStart}
+                          onChange={(e) => setMorningStart(e.target.value)}
+                          disabled={!morningEnabled}
+                          className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">End Time</span>
+                        <input
+                          type="time"
+                          value={morningEnd}
+                          onChange={(e) => setMorningEnd(e.target.value)}
+                          disabled={!morningEnabled}
+                          className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Evening Session */}
+                  <div className="rounded-lg border border-slate-150 bg-slate-50/50 p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-800">Evening Session</span>
+                      <label className="relative inline-flex items-center cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={eveningEnabled}
+                          onChange={(e) => setEveningEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-700"></div>
+                        <span className="ml-2 text-xs font-bold text-slate-600">{eveningEnabled ? "Enabled" : "Disabled"}</span>
+                      </label>
+                    </div>
+                    
+                    <div className="grid gap-4 grid-cols-2">
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Start Time</span>
+                        <input
+                          type="time"
+                          value={eveningStart}
+                          onChange={(e) => setEveningStart(e.target.value)}
+                          disabled={!eveningEnabled}
+                          className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">End Time</span>
+                        <input
+                          type="time"
+                          value={eveningEnd}
+                          onChange={(e) => setEveningEnd(e.target.value)}
+                          disabled={!eveningEnabled}
+                          className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={handleSaveTimingSettings}
+                    disabled={savingTimingSettings}
+                    className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer"
+                  >
+                    {savingTimingSettings ? "Saving..." : "Save Timing Settings"}
+                  </Button>
+                </div>
+
+                {timingSettingsStatus && (
+                  <p className={`mt-2 text-xs font-bold ${timingSettingsStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
+                    {timingSettingsStatus}
+                  </p>
+                )}
+              </div>
+            </div>
           ) : null}
         </div>
       </div>

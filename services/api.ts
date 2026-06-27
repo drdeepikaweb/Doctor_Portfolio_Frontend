@@ -32,6 +32,7 @@ export const api = {
   listDoctorContacts: (token: string) => request<{ contacts: ContactMessage[] }>("/doctors/contacts", { headers: authHeaders(token), cache: "no-store" }),
   listDoctorConsultations: (token: string) => request<{ consultations: ConsultationRequest[] }>("/doctors/consultations", { headers: authHeaders(token), cache: "no-store" }),
   getBookedSlots: (date: string) => request<{ slots: string[]; blocked_slots: string[] }>(`/consultations/booked-slots?date=${date}`, { cache: "no-store" }),
+  getAllSettings: () => request<Record<string, string>>("/settings", { cache: "no-store" }),
   getConsultationByUhid: (uhid: string) => request<{
     name: string;
     age: number;

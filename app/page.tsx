@@ -7,6 +7,7 @@ import { TestimonialCarousel } from "@/components/testimonial-carousel";
 import { Button } from "@/components/ui/button";
 import { treatments } from "@/lib/content";
 import { ConsultationButton } from "@/components/consultation-button";
+import { ConsultationTimingsBanner } from "@/components/consultation-timings-banner";
 
 const highlights = [
   { icon: Stethoscope, title: "Experienced Physician", text: "Broad internal medicine expertise for adults and families." },
@@ -32,10 +33,7 @@ export default function Home() {
         <div className="absolute right-12 top-36 hidden h-24 w-24 rounded-full border border-cyan-200 md:block" />
         <div className="mx-auto grid min-h-170 max-w-7xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
           <MotionSection className="space-y-8">
-            <div className="inline-flex items-center gap-2.5 rounded-full border-2 border-amber-300 bg-linear-to-r from-amber-50 to-orange-50 px-5 py-2.5 text-sm font-bold text-amber-900 shadow-md">
-              <span className="flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
-              Consultation Timings: Every day, 10 AM - 12 PM | 6 PM - 8 PM
-            </div>
+            <ConsultationTimingsBanner />
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
               <Activity className="h-4 w-4" />
               Comprehensive Internal Medicine & Preventive Healthcare

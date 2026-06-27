@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ConsultationForm } from "@/features/forms/consultation-form";
 import { SectionHeading } from "@/components/section-heading";
 import { api } from "@/services/api";
+import { formatConsultationTimings } from "@/lib/utils";
 import { Activity } from "lucide-react";
 
 function formatFullDates(dateStrings: string[]): string {
@@ -83,6 +84,18 @@ function formatFullDates(dateStrings: string[]): string {
 }
 
 export default function OnlineConsultationPage() {
+  const [timingsText, setTimingsText] = useState("10 AM - 12 PM | 6 PM - 8 PM");
+
+  useEffect(() => {
+    api.getAllSettings()
+      .then((settings) => {
+        if (settings) {
+          setTimingsText(formatConsultationTimings(settings));
+        }
+      })
+      .catch((err) => console.error("Failed to load consultation timings:", err));
+  }, []);
+
   return (
     <section className="bg-slate-50 py-20">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
@@ -99,7 +112,7 @@ export default function OnlineConsultationPage() {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-cyan-950 uppercase tracking-wider">Consultation Timings</h3>
-                <p className="mt-1 text-lg font-black text-cyan-900">Every day, 10 AM - 12 PM | 6 PM - 8 PM</p>
+                <p className="mt-1 text-lg font-black text-cyan-900">Every day, {timingsText}</p>
               </div>
             </div>
           </div>
