@@ -63,7 +63,15 @@ export function Footer() {
           <p className="mt-6 rounded-md bg-white/10 p-3 text-sm font-semibold">Total Website Visitors: {visitors ?? "..."}</p>
         </div>
       </div>
-      <div className="border-t border-white/10 py-5 text-center text-sm text-slate-400">© 2025 Dr. Deepika Bhardwaj. All Rights Reserved.</div>
+      <div className="border-t border-white/10 py-5 text-sm text-slate-400">
+        <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>© 2025 Dr. Deepika Bhardwaj. All Rights Reserved.</p>
+          <div className="flex gap-6">
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms-and-conditions" className="hover:text-white transition-colors">Terms & Conditions</Link>
+          </div>
+        </div>
+      </div>
     </footer>
   );
 }
