@@ -15,6 +15,7 @@ const nav = [
   ["Treatments", "/treatments"],
   ["Online Consultation", "/online-consultation"],
   ["Contact Us", "/contact"],
+  ["Doctor's Panel", "/doctor-panel"],
 ];
 
 export function Header() {
@@ -37,6 +38,7 @@ export function Header() {
             <div>
               <p className="font-extrabold text-xl py-0.5">{clinic.doctor}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.credentials}</p>
+              <p className="text-cyan-50 text-lg py-0.5">{clinic.formerly}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.hospital}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.achievement}</p>
             </div>

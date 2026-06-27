@@ -31,7 +31,17 @@ export const api = {
   getDoctorProfile: (token: string) => request<{ doctor: DoctorProfile }>("/doctors/me", { headers: authHeaders(token), cache: "no-store" }),
   listDoctorContacts: (token: string) => request<{ contacts: ContactMessage[] }>("/doctors/contacts", { headers: authHeaders(token), cache: "no-store" }),
   listDoctorConsultations: (token: string) => request<{ consultations: ConsultationRequest[] }>("/doctors/consultations", { headers: authHeaders(token), cache: "no-store" }),
-  getBookedSlots: (date: string) => request<{ blocked_slots: string[] }>(`/consultations/booked-slots?date=${date}`, { cache: "no-store" }),
+  getBookedSlots: (date: string) => request<{ slots: string[]; blocked_slots: string[] }>(`/consultations/booked-slots?date=${date}`, { cache: "no-store" }),
+  getConsultationByUhid: (uhid: string) => request<{
+    name: string;
+    age: number;
+    gender: string;
+    phone: string;
+    email: string | null;
+    address: string;
+    payment_category: string | null;
+    created_at: string;
+  }>(`/consultations/by-uhid/${uhid}`, { cache: "no-store" }),
   getConsultationDetails: (id: string, token: string) => request<{ consultation: ConsultationRequest; history: ConsultationRequest[] }>(`/doctors/consultations/${id}`, { headers: authHeaders(token), cache: "no-store" }),
   completeConsultation: (id: string, token: string) => request<{ message: string; consultation: ConsultationRequest }>(`/doctors/consultations/${id}/complete`, { method: "POST", headers: authHeaders(token) }),
 };

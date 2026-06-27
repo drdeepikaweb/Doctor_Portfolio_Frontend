@@ -32,6 +32,10 @@ export default function DoctorPanelPage() {
   const [marqueeStatus, setMarqueeStatus] = useState("");
   const [currentPageConsultations, setCurrentPageConsultations] = useState(1);
   const [currentPageContacts, setCurrentPageContacts] = useState(1);
+  const [patientsPerSlot, setPatientsPerSlot] = useState("5");
+  const [slotGapMinutes, setSlotGapMinutes] = useState("30");
+  const [savingBookingSettings, setSavingBookingSettings] = useState(false);
+  const [bookingSettingsStatus, setBookingSettingsStatus] = useState("");
 
   const isLoggedIn = Boolean(token && doctor);
 
@@ -51,18 +55,22 @@ export default function DoctorPanelPage() {
     setLoading(true);
     setStatus("");
     try {
-      const [profileData, contactData, consultationData, visitorData, marqueeData] = await Promise.all([
+      const [profileData, contactData, consultationData, visitorData, marqueeData, patientsSetting, gapSetting] = await Promise.all([
         api.getDoctorProfile(activeToken),
         api.listDoctorContacts(activeToken),
         api.listDoctorConsultations(activeToken),
         api.getVisitors(),
         fetch(`${API_BASE_URL}/settings/marquee_info`).then((res) => res.ok ? res.json() : { value: "" }).catch(() => ({ value: "" })),
+        fetch(`${API_BASE_URL}/settings/patients_per_slot`).then((res) => res.ok ? res.json() : { value: "5" }).catch(() => ({ value: "5" })),
+        fetch(`${API_BASE_URL}/settings/slot_gap_minutes`).then((res) => res.ok ? res.json() : { value: "30" }).catch(() => ({ value: "30" })),
       ]);
       setDoctor(profileData.doctor);
       setContacts(contactData.contacts);
       setConsultations(consultationData.consultations);
       setVisitorCount(visitorData.visitor_count);
       setMarqueeText(marqueeData.value || "");
+      setPatientsPerSlot(patientsSetting.value || "5");
+      setSlotGapMinutes(gapSetting.value || "30");
       setCurrentPageConsultations(1);
       setCurrentPageContacts(1);
     } catch (error) {
@@ -119,6 +127,42 @@ export default function DoctorPanelPage() {
       setMarqueeStatus(err.message || "Failed to clear announcement");
     } finally {
       setSavingMarquee(false);
+    }
+  }
+
+  async function handleSaveBookingSettings() {
+    setSavingBookingSettings(true);
+    setBookingSettingsStatus("");
+    try {
+      const [resPatients, resGap] = await Promise.all([
+        fetch(`${API_BASE_URL}/settings/patients_per_slot`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: patientsPerSlot }),
+        }),
+        fetch(`${API_BASE_URL}/settings/slot_gap_minutes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ value: slotGapMinutes }),
+        }),
+      ]);
+
+      if (!resPatients.ok || !resGap.ok) {
+        throw new Error("Failed to save booking settings");
+      }
+
+      setBookingSettingsStatus("Success: Booking settings updated!");
+      setTimeout(() => setBookingSettingsStatus(""), 3000);
+    } catch (err: any) {
+      setBookingSettingsStatus(err.message || "Failed to update booking settings");
+    } finally {
+      setSavingBookingSettings(false);
     }
   }
 
@@ -344,6 +388,59 @@ export default function DoctorPanelPage() {
           {marqueeStatus && (
             <p className={`mt-2 text-xs font-bold ${marqueeStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
               {marqueeStatus}
+            </p>
+          )}
+        </div>
+
+        {/* Booking & Slot Settings */}
+        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1 flex items-center gap-2">
+            <span>📅</span> Booking & Slot Settings
+          </h2>
+          <p className="text-xs text-slate-500 font-semibold mb-4">
+            Configure the maximum number of patients allowed per slot and the duration gap between slots.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-end">
+            <label className="block">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Patients per Slot</span>
+              <Input
+                type="number"
+                min="1"
+                max="50"
+                value={patientsPerSlot}
+                onChange={(e) => setPatientsPerSlot(e.target.value)}
+                placeholder="e.g. 5"
+                className="mt-2 h-11 border-slate-300"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Slot Gap (Minutes)</span>
+              <select
+                value={slotGapMinutes}
+                onChange={(e) => setSlotGapMinutes(e.target.value)}
+                className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+              >
+                <option value="10">10 Minutes</option>
+                <option value="15">15 Minutes</option>
+                <option value="20">20 Minutes</option>
+                <option value="30">30 Minutes (Default)</option>
+                <option value="45">45 Minutes</option>
+                <option value="60">60 Minutes (1 Hour)</option>
+              </select>
+            </label>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveBookingSettings}
+                disabled={savingBookingSettings}
+                className="h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-6 shadow cursor-pointer w-full sm:w-auto"
+              >
+                {savingBookingSettings ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+          </div>
+          {bookingSettingsStatus && (
+            <p className={`mt-2 text-xs font-bold ${bookingSettingsStatus.startsWith("Success") ? "text-emerald-600" : "text-red-600"}`}>
+              {bookingSettingsStatus}
             </p>
           )}
         </div>

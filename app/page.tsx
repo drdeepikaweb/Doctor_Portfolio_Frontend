@@ -34,7 +34,7 @@ export default function Home() {
           <MotionSection className="space-y-8">
             <div className="inline-flex items-center gap-2.5 rounded-full border-2 border-amber-300 bg-linear-to-r from-amber-50 to-orange-50 px-5 py-2.5 text-sm font-bold text-amber-900 shadow-md">
               <span className="flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
-              Consultation Timings: Every day, 10 AM - 2 PM | 5 PM - 8 PM
+              Consultation Timings: Every day, 10 AM - 12 PM | 6 PM - 8 PM
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
               <Activity className="h-4 w-4" />
@@ -54,7 +54,7 @@ export default function Home() {
               <ConsultationButton size="lg" />
             </div>
             <div className="grid max-w-xl grid-cols-3 gap-3 text-center">
-              {["MBBS, DNB, MD", "Evidence-Based", "Online Support"].map((item) => (
+              {["MBBS, MD, DNB", "Evidence-Based", "Online Support"].map((item) => (
                 <div key={item} className="rounded-md border border-slate-200 bg-white/80 p-3 text-sm font-semibold text-slate-700 shadow-sm">
                   {item}
                 </div>

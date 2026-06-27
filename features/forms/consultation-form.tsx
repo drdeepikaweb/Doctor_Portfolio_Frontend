@@ -27,7 +27,7 @@ const translations = {
     phonePlaceholder: "Enter a 10-digit phone number",
     email: "Email Address (optional)",
     emailPlaceholder: "Enter email address",
-    reconsultationId: "Submission ID (if reconsulting within a week)",
+    reconsultationId: "UHID (for follow-up case within a week)",
     reconsultationIdPlaceholder: "e.g. AA20002606",
     address: "Address (for Bill)",
     addressPlaceholder: "Enter full address",
@@ -79,7 +79,7 @@ const translations = {
     phonePlaceholder: "10 अंकों का फ़ोन नंबर दर्ज करें",
     email: "ईमेल पता (वैकल्पिक)",
     emailPlaceholder: "ईमेल पता दर्ज करें",
-    reconsultationId: "सबमिशन आईडी (यदि एक सप्ताह के भीतर फिर से परामर्श कर रहे हैं)",
+    reconsultationId: "यूएचआईडी (एक सप्ताह के भीतर फॉलो-अप मामले के लिए)",
     reconsultationIdPlaceholder: "जैसे: AA20002606",
     address: "पता (बिल के लिए)",
     addressPlaceholder: "पूरा पता दर्ज करें",
@@ -210,8 +210,11 @@ export function ConsultationForm() {
   const t = translations[language];
   const [status, setStatus] = useState<FormStatus | null>(null);
   const [uploadedReports, setUploadedReports] = useState<File[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
   const [loadingOverlay, setLoadingOverlay] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [autofilledDetails, setAutofilledDetails] = useState<any>(null);
   const today = getTodayDateInputValue();
 
   const paymentOptions = useMemo(() => [
@@ -256,7 +259,7 @@ export function ConsultationForm() {
     });
   }, [language]);
 
-  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<any>({
+  const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<any>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
@@ -289,15 +292,59 @@ export function ConsultationForm() {
     if (preferredDateValue) {
       api.getBookedSlots(preferredDateValue)
         .then((data) => {
+          setAvailableSlots(data.slots || []);
           setBlockedSlots(data.blocked_slots || []);
         })
         .catch(() => {
+          setAvailableSlots([]);
           setBlockedSlots([]);
         });
     } else {
+      setAvailableSlots([]);
       setBlockedSlots([]);
     }
   }, [preferredDateValue]);
+
+  const handleVerifyUhid = async (uhid: string) => {
+    try {
+      setLoadingOverlay(language === "hi" ? "यूएचआईडी सत्यापित की जा रही है..." : "Verifying UHID...");
+      const details = await api.getConsultationByUhid(uhid);
+      
+      setValue("name", details.name);
+      setValue("age", details.age);
+      setValue("gender", details.gender);
+      setValue("phone", details.phone);
+      setValue("email", details.email || "");
+      setValue("address", details.address);
+      setValue("paymentCategory", details.payment_category || "");
+      
+      setAutofilledDetails(details);
+      setIsLocked(true);
+      setStatus({ type: "info", message: language === "hi" ? "यूएचआईडी विवरण मिल गए!" : "UHID details autofilled!" });
+    } catch (err: any) {
+      setIsLocked(false);
+      setAutofilledDetails(null);
+      
+      setValue("name", "");
+      setValue("age", "");
+      setValue("gender", "");
+      setValue("phone", "");
+      setValue("email", "");
+      setValue("address", "");
+      setValue("paymentCategory", "");
+      
+      setStatus({ type: "error", message: err.message || (language === "hi" ? "अमान्य यूएचआईडी" : "Invalid UHID") });
+    } finally {
+      setLoadingOverlay(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!reconsultationIdValue || reconsultationIdValue.trim() === "") {
+      setIsLocked(false);
+      setAutofilledDetails(null);
+    }
+  }, [reconsultationIdValue]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -319,13 +366,20 @@ export function ConsultationForm() {
         setLoadingOverlay(language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting...");
         setStatus({ type: "info", message: language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting..." });
         
+        const finalName = values.name || autofilledDetails?.name;
+        const finalAge = values.age !== undefined && values.age !== "" ? values.age : autofilledDetails?.age;
+        const finalGender = values.gender || autofilledDetails?.gender;
+        const finalPhone = values.phone || autofilledDetails?.phone;
+        const finalEmail = values.email !== undefined && values.email !== "" ? values.email : autofilledDetails?.email;
+        const finalAddress = values.address || autofilledDetails?.address;
+
         const formData = new FormData();
-        formData.append("name", values.name);
-        formData.append("age", String(values.age));
-        formData.append("gender", values.gender);
-        formData.append("phone", values.phone);
-        if (values.email) formData.append("email", values.email);
-        formData.append("address", values.address);
+        formData.append("name", finalName);
+        formData.append("age", String(finalAge));
+        formData.append("gender", finalGender);
+        formData.append("phone", finalPhone);
+        if (finalEmail) formData.append("email", finalEmail);
+        formData.append("address", finalAddress);
         formData.append("preferred_date", values.preferred_date);
         formData.append("preferred_time", values.preferred_time);
         formData.append("reconsultation_id", values.reconsultation_id.trim());
@@ -431,14 +485,59 @@ export function ConsultationForm() {
         setStatus({ type: "error", message: t.validationError });
       })} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4">
-          <Field label={t.fullName + " *"} placeholder={t.fullNamePlaceholder} registration={register("name")} error={errors.name} />
+          {/* UHID Highlighted Field at the top */}
+          <div className="rounded-lg border-2 border-cyan-500/30 bg-cyan-50/20 p-4 shadow-sm">
+            <Field
+              label={t.reconsultationId}
+              placeholder={t.reconsultationIdPlaceholder}
+              registration={register("reconsultation_id", {
+                onBlur: (e) => {
+                  const val = e.target.value;
+                  if (val && val.trim().length >= 4) {
+                    handleVerifyUhid(val.trim());
+                  }
+                }
+              })}
+              error={errors.reconsultation_id}
+              className="border-cyan-200 bg-white"
+            />
+            <p className="mt-1.5 text-xs font-semibold text-cyan-800 leading-normal">
+              {language === "hi" 
+                ? "यदि आपके पास पिछले 7 दिनों का यूएचआईडी (सबमिशन आईडी) है, तो इसे यहाँ दर्ज करें। विवरण स्वतः भर जाएगा और परामर्श निःशुल्क होगा।" 
+                : "If you have a UHID (Submission ID) from the last 7 days, enter it here. Your details will be filled automatically and the consultation will be free."}
+            </p>
+          </div>
+
+          <Field
+            label={t.fullName + " *"}
+            placeholder={t.fullNamePlaceholder}
+            registration={register("name")}
+            error={errors.name}
+            readOnly={isLocked}
+            className={isLocked ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed select-none" : ""}
+          />
           
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t.age + " *"} type="number" placeholder={t.agePlaceholder} registration={register("age")} error={errors.age} />
+            <Field
+              label={t.age + " *"}
+              type="number"
+              placeholder={t.agePlaceholder}
+              registration={register("age")}
+              error={errors.age}
+              readOnly={isLocked}
+              className={isLocked ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed select-none" : ""}
+            />
             
             <label className="block">
               <span className="text-sm font-semibold text-slate-800">{t.gender} *</span>
-              <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("gender")} aria-invalid={!!errors.gender}>
+              <select
+                className={isLocked 
+                  ? "mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-100/80 px-3 text-sm shadow-sm cursor-not-allowed text-slate-500 select-none"
+                  : "mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"}
+                {...register("gender")}
+                disabled={isLocked}
+                aria-invalid={!!errors.gender}
+              >
                 <option value="">{t.selectGender}</option>
                 <option value="female">{language === "hi" ? "महिला" : "Female"}</option>
                 <option value="male">{language === "hi" ? "पुरुष" : "Male"}</option>
@@ -449,11 +548,33 @@ export function ConsultationForm() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t.phone + " *"} placeholder={t.phonePlaceholder} registration={register("phone")} error={errors.phone} />
-            <Field label={t.email} type="email" placeholder={t.emailPlaceholder} registration={register("email")} error={errors.email} />
+            <Field
+              label={t.phone + " *"}
+              placeholder={t.phonePlaceholder}
+              registration={register("phone")}
+              error={errors.phone}
+              readOnly={isLocked}
+              className={isLocked ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed select-none" : ""}
+            />
+            <Field
+              label={t.email}
+              type="email"
+              placeholder={t.emailPlaceholder}
+              registration={register("email")}
+              error={errors.email}
+              readOnly={isLocked}
+              className={isLocked ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed select-none" : ""}
+            />
           </div>
 
-          <Field label={t.address + " *"} placeholder={t.addressPlaceholder} registration={register("address")} error={errors.address} />
+          <Field
+            label={t.address + " *"}
+            placeholder={t.addressPlaceholder}
+            registration={register("address")}
+            error={errors.address}
+            readOnly={isLocked}
+            className={isLocked ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed select-none" : ""}
+          />
           
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t.preferredDate + " *"} type="date" min={today} registration={register("preferred_date")} error={errors.preferred_date} />
@@ -467,7 +588,7 @@ export function ConsultationForm() {
                 aria-invalid={!!errors.preferred_time}
               >
                 <option value="">{preferredDateValue ? t.selectTimeSlot : t.chooseDateFirst}</option>
-                {timeSlots.map((slot) => {
+                {availableSlots.map((slot) => {
                   const isBlocked = blockedSlots.includes(slot);
                   const isPast = isSlotInPast(slot, preferredDateValue);
                   const isDisabled = isBlocked || isPast;
@@ -515,17 +636,17 @@ export function ConsultationForm() {
             </div>
           ) : null}
 
-          <Field
-            label={t.reconsultationId}
-            placeholder={t.reconsultationIdPlaceholder}
-            registration={register("reconsultation_id")}
-            error={errors.reconsultation_id}
-          />
-
           {!reconsultationIdValue && (
             <label className="block">
               <span className="text-sm font-semibold text-slate-800">{t.paymentOption} *</span>
-              <select className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100" {...register("paymentCategory")} aria-invalid={!!errors.paymentCategory}>
+              <select
+                className={isLocked 
+                  ? "mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-100/80 px-3 text-sm shadow-sm cursor-not-allowed text-slate-500 select-none"
+                  : "mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"}
+                {...register("paymentCategory")}
+                disabled={isLocked}
+                aria-invalid={!!errors.paymentCategory}
+              >
                 <option value="">{t.selectPayment}</option>
                 {paymentOptions.map((option) => (
                   <option key={option.value} value={option.value}>

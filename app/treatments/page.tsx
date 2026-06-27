@@ -30,7 +30,7 @@ export default function TreatmentsPage() {
         <div className="mt-12 space-y-8">
           {treatments.map((treatment) => (
             <article key={treatment.title} className="rounded-lg border border-slate-200 bg-slate-50 p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-slate-950">{treatment.title}</h2>
+              <h2 className="text-2xl font-bold text-slate-950"> <treatment.icon className="inline-block h-6 w-6 mr-2" /> {treatment.title}</h2>
               <div className="mt-4 grid gap-5 ">
                 <p className="mt-2 text-lg leading-6 text-slate-600">
                   {treatment.description}

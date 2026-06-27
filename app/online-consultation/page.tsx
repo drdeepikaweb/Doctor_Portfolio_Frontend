@@ -99,7 +99,7 @@ export default function OnlineConsultationPage() {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-cyan-950 uppercase tracking-wider">Consultation Timings</h3>
-                <p className="mt-1 text-lg font-black text-cyan-900">Every day, 10 AM - 2 PM | 5 PM - 8 PM</p>
+                <p className="mt-1 text-lg font-black text-cyan-900">Every day, 10 AM - 12 PM | 6 PM - 8 PM</p>
               </div>
             </div>
           </div>
