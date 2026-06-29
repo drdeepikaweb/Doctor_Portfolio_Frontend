@@ -15,8 +15,9 @@ const links = [
 ];
 
 const social_links = [
-  { icon: Linkedin, href: "https://www.linkedin.com/in/dr-deepika-bhardwaj-143b091a1/" },
-]
+  {icon: Linkedin, href: "https://www.linkedin.com/in/dr-deepika-bhardwaj-143b091a1/"},
+  {icon: Facebook, href: "https://www.facebook.com/people/Deepika-Bhardwaj/pfbid02RPQc7HGet6Z672FoA1SGq4iFkQF6Q9Msi3wpfS5Xtj7h274X1RZ6HmvgvTPb3GNql/"}
+];
 
 export function Footer() {
   const [visitors, setVisitors] = useState<number | null>(null);
