@@ -38,8 +38,8 @@ export function Footer() {
           <p className="mt-2 text-slate-300 py-1">{clinic.credentials}</p>
           <p className="text-slate-300 py-1">{clinic.hospital}</p>
           <p className="text-slate-300 py-1">{clinic.achievement}</p>
-          <p className="text-slate-300 py-1">{clinic.formerly}</p>
           <p className="text-slate-300 py-1">{clinic.tagline}</p>
+          <p className="text-slate-300 py-1">{clinic.formerly}</p>
           <p className="mt-4 max-w-md leading-7 text-slate-300">Patient-focused general medicine care for diagnosis, chronic disease support, and preventive health.</p>
 
           <div className="mt-5 flex gap-3">

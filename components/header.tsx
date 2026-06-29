@@ -39,8 +39,8 @@ export function Header() {
               <p className="font-extrabold text-xl py-0.5">{clinic.doctor}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.credentials}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.hospital}</p>
-              <p className="text-cyan-50 text-lg py-0.5">{clinic.formerly}</p>
               <p className="text-cyan-50 text-lg py-0.5">{clinic.achievement}</p>
+              <p className="text-cyan-50 text-lg py-0.5">{clinic.formerly}</p>
             </div>
           </div>
           <div className="flex flex-col gap-6 items-center text-center sm:flex-row sm:items-center sm:text-left lg:gap-8">
