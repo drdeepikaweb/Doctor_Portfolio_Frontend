@@ -18,7 +18,7 @@ const highlights = [
 
 const reasons = [
   {title: "Experienced Physician", description: "Providing compassionate, evidence-based medical care with extensive clinical experience across acute, chronic, and preventive health conditions."},
-  {title: "Diagnostic Strategy", description: "Using thorough assessments, advanced clinical reasoning, and appropriate testing to accurately diagnose and address underlying health concerns."},
+  {title: "Diagnostic Strategy", description: "Using thorough assessments, advanced clinical reasoning, and appropriate testing to diagnose and address underlying health concerns."},
   {title: "Personalized Treatment Plans", description: "Developing individualized treatment strategies tailored to each patient's medical history, lifestyle, and long-term wellness goals."},
   {title: "Preventive Healthcare", description: "Focusing on early detection, routine screenings, and proactive health management to help patients maintain optimal well-being."},
   {title: "Patient-Centric Care", description: "Building strong doctor-patient relationships through attentive listening, clear communication, and shared decision-making at every step."},

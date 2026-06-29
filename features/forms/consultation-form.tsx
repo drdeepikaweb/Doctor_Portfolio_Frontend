@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getErrorMessage } from "@/services/api";
 import { Field, TextAreaField } from "./form-fields";
@@ -119,20 +119,6 @@ const translations = {
   }
 };
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if ((window as any).Razorpay) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
-
 export function DeclarationConsentDialog({ trigger }: { trigger: React.ReactNode }) {
   const { language } = useLanguage();
   const t = translations[language];
@@ -209,6 +195,8 @@ export function ConsultationForm() {
   const { language } = useLanguage();
   const t = translations[language];
   const [status, setStatus] = useState<FormStatus | null>(null);
+  const [successModalData, setSuccessModalData] = useState<any | null>(null);
+  const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
   const [uploadedReports, setUploadedReports] = useState<File[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
@@ -364,7 +352,6 @@ export function ConsultationForm() {
     try {
       if (values.reconsultation_id && values.reconsultation_id.trim() !== "") {
         setLoadingOverlay(language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting...");
-        setStatus({ type: "info", message: language === "hi" ? "सत्यापन और सबमिट किया जा रहा है..." : "Verifying & submitting..." });
         
         const finalName = values.name || autofilledDetails?.name;
         const finalAge = values.age !== undefined && values.age !== "" ? values.age : autofilledDetails?.age;
@@ -387,12 +374,12 @@ export function ConsultationForm() {
         uploadedReports.forEach((document) => formData.append("documents", document));
 
         try {
-          await api.createConsultation(formData);
-          setStatus({ type: "success", message: t.successMessage });
+          const res = await api.createConsultation(formData);
+          setSuccessModalData(res.consultation);
           reset();
           setUploadedReports([]);
         } catch (error) {
-          setStatus({ type: "error", message: getErrorMessage(error) });
+          setErrorModalMessage(getErrorMessage(error));
         } finally {
           setLoadingOverlay(null);
         }
@@ -401,79 +388,41 @@ export function ConsultationForm() {
 
       setLoadingOverlay(language === "hi" ? "भुगतान पोर्टल लोड किया जा रहा है..." : "Loading payment portal...");
       
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        setStatus({ type: "error", message: language === "hi" ? "रेजरपे भुगतान पोर्टल लोड करने में विफल। इंटरनेट जांचें।" : "Failed to load Razorpay payment portal. Check your internet connection." });
-        setLoadingOverlay(null);
-        return;
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("age", String(values.age));
+      formData.append("gender", values.gender);
+      formData.append("phone", values.phone);
+      if (values.email) formData.append("email", values.email);
+      formData.append("address", values.address);
+      formData.append("preferred_date", values.preferred_date);
+      formData.append("preferred_time", values.preferred_time);
+      formData.append("payment_category", values.paymentCategory);
+      formData.append("consultation_fee", String(paymentOptions.find(o => o.value === values.paymentCategory)?.fee || 350));
+
+      uploadedReports.forEach((document) => formData.append("documents", document));
+
+      if (values.id_document && values.id_document[0]) {
+        formData.append("id_document", values.id_document[0]);
       }
 
-      const order = await api.createOrder({ payment_category: values.paymentCategory });
-
-      const options = {
-        key: order.key,
-        amount: order.amount,
-        currency: order.currency,
-        name: t.clinicName,
-        description: `${language === "hi" ? "ऑनलाइन परामर्श शुल्क" : "Online Consultation Fee"} - ${paymentOptions.find(o => o.value === values.paymentCategory)?.label}`,
-        order_id: order.id,
-        handler: async function (response: any) {
-          setLoadingOverlay(language === "hi" ? "भुगतान सत्यापित और परामर्श पंजीकृत किया जा रहा है..." : "Verifying payment & registering consultation...");
-          setStatus({ type: "info", message: t.paymentAuthorized });
-
-          const formData = new FormData();
-          formData.append("name", values.name);
-          formData.append("age", String(values.age));
-          formData.append("gender", values.gender);
-          formData.append("phone", values.phone);
-          if (values.email) formData.append("email", values.email);
-          formData.append("address", values.address);
-          formData.append("preferred_date", values.preferred_date);
-          formData.append("preferred_time", values.preferred_time);
-          formData.append("payment_category", values.paymentCategory);
-          formData.append("consultation_fee", String(order.amount / 100));
-
-          formData.append("razorpay_order_id", response.razorpay_order_id);
-          formData.append("razorpay_payment_id", response.razorpay_payment_id);
-          formData.append("razorpay_signature", response.razorpay_signature);
-
-          uploadedReports.forEach((document) => formData.append("documents", document));
-
-          if (values.id_document && values.id_document[0]) {
-            formData.append("id_document", values.id_document[0]);
-          }
-
-          try {
-            await api.createConsultation(formData);
-            setStatus({ type: "success", message: t.successMessage });
-            reset();
-            setUploadedReports([]);
-          } catch (error) {
-            setStatus({ type: "error", message: getErrorMessage(error) });
-          } finally {
-            setLoadingOverlay(null);
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            setLoadingOverlay(null);
-          }
-        },
-        prefill: {
-          name: values.name,
-          email: values.email || "",
-          contact: values.phone,
-        },
-        theme: {
-          color: "#0e7490",
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-      setLoadingOverlay(null);
+      try {
+        const response = await api.createConsultation(formData);
+        if (response.redirectUrl) {
+          setLoadingOverlay(language === "hi" ? "भुगतान पोर्टल पर रीडायरेक्ट किया जा रहा है..." : "Redirecting to payment portal...");
+          window.location.href = response.redirectUrl;
+        } else {
+          setSuccessModalData(response.consultation);
+          reset();
+          setUploadedReports([]);
+        }
+      } catch (error) {
+        setErrorModalMessage(getErrorMessage(error));
+      } finally {
+        setLoadingOverlay(null);
+      }
     } catch (error) {
-      setStatus({ type: "error", message: getErrorMessage(error) });
+      setErrorModalMessage(getErrorMessage(error));
       setLoadingOverlay(null);
     }
   }
@@ -743,6 +692,92 @@ export function ConsultationForm() {
           </div>
         </div>
       )}
+      {/* Success Modal */}
+      <Dialog.Root open={!!successModalData} onOpenChange={(open) => { if (!open) setSuccessModalData(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[10000] bg-slate-950/60 backdrop-blur-sm" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[10001] max-h-[92vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-emerald-50 p-3 text-emerald-600 mb-4 animate-bounce">
+                <CheckCircle2 className="h-12 w-12" />
+              </div>
+              
+              <Dialog.Title className="text-2xl font-black text-slate-900 tracking-tight">
+                {language === "hi" ? "अनुरोध सफलतापूर्वक प्राप्त हुआ!" : "Submission Successful!"}
+              </Dialog.Title>
+              
+              <div className="mt-4 w-full space-y-3 bg-slate-50 border border-slate-150 rounded-xl p-4 text-left text-sm text-slate-700 font-medium">
+                {successModalData?.submission_id && (
+                  <div className="flex justify-between border-b border-slate-200/60 pb-2">
+                    <span className="text-slate-400 font-semibold uppercase text-xs tracking-wider">Submission ID (UHID)</span>
+                    <span className="font-mono text-cyan-700 font-bold bg-cyan-50 border border-cyan-155 px-2 py-0.5 rounded">{successModalData.submission_id}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold uppercase text-xs tracking-wider">Patient Name</span>
+                  <span className="text-slate-800 font-bold">{successModalData?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold uppercase text-xs tracking-wider">Date</span>
+                  <span className="text-slate-800 font-bold font-semibold">
+                    {successModalData?.preferred_date ? new Date(successModalData.preferred_date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold uppercase text-xs tracking-wider">Time Slot</span>
+                  <span className="text-slate-800 font-bold">{successModalData?.preferred_time}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold uppercase text-xs tracking-wider">Type</span>
+                  <span className="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-xs">
+                    {language === "hi" ? "निःशुल्क पुनः परामर्श" : "Free Reconsultation"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 text-sm font-semibold text-slate-500 leading-relaxed max-w-[320px]">
+                {language === "hi"
+                  ? "परामर्श की पुष्टि के लिए आपसे अगले 15 मिनट के भीतर व्हाट्सएप (WhatsApp) पर संपर्क किया जाएगा।"
+                  : "We will contact you within 15 minutes on WhatsApp to confirm your online consultation."}
+              </div>
+
+              <div className="mt-6 w-full">
+                <Button type="button" onClick={() => setSuccessModalData(null)} className="w-full h-11 bg-cyan-700 hover:bg-cyan-800 text-white font-bold rounded-xl shadow-lg transition">
+                  {language === "hi" ? "ठीक है" : "Close"}
+                </Button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* Error Modal */}
+      <Dialog.Root open={!!errorModalMessage} onOpenChange={(open) => { if (!open) setErrorModalMessage(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[10000] bg-slate-950/60 backdrop-blur-sm" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[10001] max-h-[92vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-red-50 p-3 text-red-600 mb-4 animate-pulse">
+                <AlertTriangle className="h-12 w-12" />
+              </div>
+              
+              <Dialog.Title className="text-xl font-bold text-slate-900 tracking-tight">
+                {language === "hi" ? "जमा करने में विफल!" : "Submission Failed!"}
+              </Dialog.Title>
+              
+              <div className="mt-4 w-full bg-red-50/50 border border-red-100 rounded-xl p-4 text-sm text-red-700 font-semibold leading-relaxed">
+                {errorModalMessage}
+              </div>
+
+              <div className="mt-6 w-full">
+                <Button type="button" onClick={() => setErrorModalMessage(null)} className="w-full h-11 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition">
+                  {language === "hi" ? "ठीक है" : "Close"}
+                </Button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }

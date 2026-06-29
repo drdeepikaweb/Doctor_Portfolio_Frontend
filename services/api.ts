@@ -22,10 +22,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   createContact: (data: unknown) => request("/contact", { method: "POST", body: JSON.stringify(data) }),
-  createConsultation: (data: FormData) => request("/consultations", { method: "POST", body: data }),
+  createConsultation: (data: FormData) => request<{ message: string; redirectUrl?: string; consultation: any }>("/consultations", { method: "POST", body: data }),
   getVisitors: () => request<{ visitor_count: number }>("/visitors", { cache: "no-store" }),
   incrementVisitors: () => request<{ visitor_count: number }>("/visitors/increment", { method: "POST", credentials: "include" }),
-  createOrder: (data: { payment_category: string }) => request<{ id: string; amount: number; currency: string; key: string }>("/payments/order", { method: "POST", body: JSON.stringify(data) }),
+  verifyPayment: (id: string) => request<{ success: boolean; pending?: boolean; message: string; consultation?: any }>("/payments/verify", { method: "POST", body: JSON.stringify({ id }) }),
   doctorLogin: (data: unknown) => request<{ token: string; doctor: DoctorProfile; expires_at: string }>("/doctors/login", { method: "POST", body: JSON.stringify(data) }),
   doctorLogout: (token: string) => request<{ message: string }>("/doctors/logout", { method: "POST", headers: authHeaders(token) }),
   getDoctorProfile: (token: string) => request<{ doctor: DoctorProfile }>("/doctors/me", { headers: authHeaders(token), cache: "no-store" }),
@@ -83,8 +83,10 @@ export type ConsultationRequest = {
   consultation_fee: number | null;
   aadhaar_no: string | null;
   id_document_url: string | null;
-  razorpay_order_id: string | null;
-  razorpay_payment_id: string | null;
+  razorpay_order_id?: string | null;
+  razorpay_payment_id?: string | null;
+  phonepe_transaction_id?: string | null;
+  payment_verified?: boolean;
   created_at: string;
   submission_id?: string | null;
   is_reconsultation?: boolean;
