@@ -178,6 +178,15 @@ function getTodayDateInputValue() {
   return `${year}-${month}-${day}`;
 }
 
+function getMaxDateInputValue() {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function isSlotInPast(slot: string, dateStr: string): boolean {
   const todayStr = getTodayDateInputValue();
   if (dateStr !== todayStr) return false;
@@ -218,7 +227,10 @@ export function ConsultationForm() {
       phone: z.string().min(10, language === "hi" ? "कृपया 10-अंकों का वैध फ़ोन नंबर दर्ज करें" : "Enter a valid phone number"),
       email: z.string().email(language === "hi" ? "कृपया वैध ईमेल दर्ज करें" : "Enter a valid email").optional().or(z.literal("")),
       address: z.string().min(5, language === "hi" ? "कृपया पूरा पता दर्ज करें" : "Enter full address"),
-      preferred_date: z.string().min(1, language === "hi" ? "कृपया पसंदीदा तारीख चुनें" : "Choose a preferred date").refine((value) => value >= getTodayDateInputValue(), language === "hi" ? "पसंदीदा तारीख अतीत में नहीं हो सकती" : "Preferred date cannot be in the past"),
+      preferred_date: z.string()
+        .min(1, language === "hi" ? "कृपया पसंदीदा तारीख चुनें" : "Choose a preferred date")
+        .refine((value) => value >= getTodayDateInputValue(), language === "hi" ? "पसंदीदा तारीख अतीत में नहीं हो सकती" : "Preferred date cannot be in the past")
+        .refine((value) => value <= getMaxDateInputValue(), language === "hi" ? "पसंदीदा तारीख आज से 1 सप्ताह के भीतर होनी चाहिए" : "Preferred date must be within 1 week from today"),
       preferred_time: z.string().min(1, language === "hi" ? "कृपया पसंदीदा समय स्लॉट चुनें" : "Choose a preferred time slot"),
       documents: z.any().optional(),
       reconsultation_id: z.string().optional().or(z.literal("")),
@@ -526,7 +538,7 @@ export function ConsultationForm() {
           />
           
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t.preferredDate + " *"} type="date" min={today} registration={register("preferred_date")} error={errors.preferred_date} />
+            <Field label={t.preferredDate + " *"} type="date" min={today} max={getMaxDateInputValue()} registration={register("preferred_date")} error={errors.preferred_date} />
             
             <label className="block">
               <span className="text-sm font-semibold text-slate-800">{t.preferredTime} *</span>
