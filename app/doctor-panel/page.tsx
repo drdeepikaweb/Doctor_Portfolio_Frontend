@@ -36,6 +36,12 @@ export default function DoctorPanelPage() {
   const [slotGapMinutes, setSlotGapMinutes] = useState("30");
   const [savingBookingSettings, setSavingBookingSettings] = useState(false);
   const [bookingSettingsStatus, setBookingSettingsStatus] = useState("");
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2 | 3>(1);
+  const [resetForm, setResetForm] = useState({ email: "", otp: "", password: "", confirmPassword: "" });
+  const [timer, setTimer] = useState(0);
+  const [resetStatus, setResetStatus] = useState("");
+  const [resetError, setResetError] = useState("");
 
   const [morningEnabled, setMorningEnabled] = useState(true);
   const [morningStart, setMorningStart] = useState("10:00");
@@ -282,6 +288,74 @@ export default function DoctorPanelPage() {
   }
 
   useEffect(() => {
+    if (timer <= 0) return;
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  async function handleRequestResetOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setResetError("");
+    setResetStatus("");
+    try {
+      await api.requestResetPasswordOtp(resetForm.email);
+      setResetStatus("OTP has been sent to the Telegram channel linked to your notifications.");
+      setResetStep(2);
+      setTimer(60);
+    } catch (error) {
+      setResetError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyResetOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setResetError("");
+    setResetStatus("");
+    try {
+      await api.verifyResetPasswordOtp(resetForm.email, resetForm.otp);
+      setResetStatus("OTP verified successfully. Please choose a new password.");
+      setResetStep(3);
+    } catch (error) {
+      setResetError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (resetForm.password !== resetForm.confirmPassword) {
+      setResetError("Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    setResetError("");
+    setResetStatus("");
+    try {
+      await api.resetPassword({
+        email: resetForm.email,
+        otp: resetForm.otp,
+        password: resetForm.password,
+      });
+      alert("Password reset successfully. You can now login with your new password.");
+      setIsResetMode(false);
+      setResetStep(1);
+      setResetForm({ email: "", otp: "", password: "", confirmPassword: "" });
+      setLoginForm((prev) => ({ ...prev, email: resetForm.email }));
+    } catch (error) {
+      setResetError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
     if (!token || doctor) return;
     const timeout = window.setTimeout(() => {
       void loadPanel(token);
@@ -343,6 +417,183 @@ export default function DoctorPanelPage() {
     return paginatedConsultations.length;
   }, [activeTab, paginatedConsultations.length, paginatedContacts.length]);
 
+  if (isResetMode) {
+    return (
+      <section className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12 animate-fadeIn">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-cyan-500 to-cyan-750"></div>
+          
+          <div className="mb-6 flex items-center gap-4">
+            <div className="rounded-xl bg-cyan-50 p-4 text-cyan-700 shadow-inner">
+              <LockKeyhole className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Reset Password</h1>
+              <p className="text-sm text-slate-500 font-medium">Step {resetStep} of 3</p>
+            </div>
+          </div>
+
+          {resetStep === 1 && (
+            <form onSubmit={handleRequestResetOtp} className="grid gap-5">
+              <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                Enter your registered doctor email. We will generate and send a 6-digit OTP code to your linked Telegram account.
+              </p>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Email Address</span>
+                <Input
+                  className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500"
+                  type="email"
+                  value={resetForm.email}
+                  onChange={(e) => setResetForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                  placeholder="doctor@example.com"
+                />
+              </label>
+
+              {resetError ? (
+                <p className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm font-semibold text-red-700">
+                  {resetError}
+                </p>
+              ) : null}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 rounded-lg text-sm font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg transition-all cursor-pointer"
+              >
+                {loading ? "Sending OTP..." : "Send Verification OTP"}
+              </Button>
+            </form>
+          )}
+
+          {resetStep === 2 && (
+            <form onSubmit={handleVerifyResetOtp} className="grid gap-5">
+              <p className="text-sm text-slate-650 leading-relaxed font-medium">
+                A 6-digit verification code has been sent to Telegram. Please enter it below.
+              </p>
+
+              {resetStatus ? (
+                <p className="rounded-lg bg-emerald-50 border border-emerald-250 p-3 text-xs font-semibold text-emerald-800">
+                  {resetStatus}
+                </p>
+              ) : null}
+
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">6-Digit OTP</span>
+                <Input
+                  className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500 font-mono text-center text-xl tracking-widest font-black"
+                  type="text"
+                  maxLength={6}
+                  pattern="\d{6}"
+                  value={resetForm.otp}
+                  onChange={(e) => setResetForm((prev) => ({ ...prev, otp: e.target.value.replace(/\D/g, "") }))}
+                  required
+                  placeholder="------"
+                />
+              </label>
+
+              <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                <span>OTP Code Expiration:</span>
+                {timer > 0 ? (
+                  <span className="text-cyan-700 font-bold">Expires in {timer} seconds</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestResetOtp}
+                    disabled={loading}
+                    className="text-cyan-600 hover:text-cyan-700 font-bold hover:underline cursor-pointer"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+              </div>
+
+              {resetError ? (
+                <p className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm font-semibold text-red-700">
+                  {resetError}
+                </p>
+              ) : null}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 rounded-lg text-sm font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg transition-all cursor-pointer"
+              >
+                {loading ? "Verifying..." : "Verify OTP"}
+              </Button>
+            </form>
+          )}
+
+          {resetStep === 3 && (
+            <form onSubmit={handleResetPassword} className="grid gap-5">
+              <p className="text-sm text-slate-650 leading-relaxed font-medium">
+                OTP verified! Choose a secure new password for your doctor account.
+              </p>
+
+              {resetStatus ? (
+                <p className="rounded-lg bg-emerald-50 border border-emerald-250 p-3 text-xs font-semibold text-emerald-800">
+                  {resetStatus}
+                </p>
+              ) : null}
+
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">New Password</span>
+                <Input
+                  className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500"
+                  type="password"
+                  value={resetForm.password}
+                  onChange={(e) => setResetForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                  placeholder="Minimum 8 characters"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Confirm New Password</span>
+                <Input
+                  className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500"
+                  type="password"
+                  value={resetForm.confirmPassword}
+                  onChange={(e) => setResetForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  required
+                />
+              </label>
+
+              {resetError ? (
+                <p className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm font-semibold text-red-700">
+                  {resetError}
+                </p>
+              ) : null}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 rounded-lg text-sm font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg transition-all cursor-pointer"
+              >
+                {loading ? "Resetting Password..." : "Change Password"}
+              </Button>
+            </form>
+          )}
+
+          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsResetMode(false);
+                setResetStep(1);
+                setResetError("");
+                setResetStatus("");
+              }}
+              className="text-sm font-bold text-slate-500 hover:text-slate-700 transition cursor-pointer"
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <section className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
@@ -361,10 +612,25 @@ export default function DoctorPanelPage() {
               <span className="text-sm font-semibold text-slate-700">Email Address</span>
               <Input className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500" type="email" value={loginForm.email} onChange={(event) => setLoginForm((value) => ({ ...value, email: event.target.value }))} required />
             </label>
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Password</span>
-              <Input className="mt-2 h-11 border-slate-300 rounded-lg focus:ring-cyan-500" type="password" value={loginForm.password} onChange={(event) => setLoginForm((value) => ({ ...value, password: event.target.value }))} required />
-            </label>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700">Password</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResetMode(true);
+                    setResetStep(1);
+                    setResetForm((prev) => ({ ...prev, email: loginForm.email }));
+                    setResetError("");
+                    setResetStatus("");
+                  }}
+                  className="text-xs font-bold text-cyan-600 hover:text-cyan-700 hover:underline cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <Input className="h-11 border-slate-300 rounded-lg focus:ring-cyan-500" type="password" value={loginForm.password} onChange={(event) => setLoginForm((value) => ({ ...value, password: event.target.value }))} required />
+            </div>
             {status ? <p className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm font-semibold text-red-700">{status}</p> : null}
             <Button type="submit" disabled={loading} className="h-11 rounded-lg text-sm font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg transition-all">{loading ? "Logging in..." : "Access Dashboard"}</Button>
           </form>
